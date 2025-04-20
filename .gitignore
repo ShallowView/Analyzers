@@ -13,7 +13,9 @@ pyvenv.cfg
 pip-selfcheck.json
 
 *.csv
+*.tsv
 *.pgn
 
+.vscode
 .idea
-__pychache__/
+__pycache__/
