@@ -1,57 +1,157 @@
 import pandas as pd
 from pandarallel import pandarallel
 import uuid
+import logging
+
+# Initialize logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 pandarallel.initialize(progress_bar=False, verbose=0)
 
+def PGNtoDataFrame(file: str) -> pd.DataFrame:
+    """
+    Convert a PGN file to a DataFrame.
+    :param: file: Path to the PGN file.
+    :return: DataFrame containing raw PGN information.
+    """
+    try:
+        logger.info(f"Starting to process PGN file: {file}")
+        games = []
+        dic = {}
+
+        with open(file, "r") as f:
+            for line in f:
+                if line.startswith("["):
+                    try:
+                        header, value = line[1:-2].split(" ", 1)
+                        dic[header] = value.strip('"')
+                    except ValueError as e:
+                        logger.error(f"Error parsing header line: {line.strip()} - {e}")
+                elif line.startswith("1") and dic:
+                    games.append(dic)
+                    dic = {}
+
+        logger.info(f"Finished processing PGN file. Total games: {len(games)}")
+        return pd.DataFrame(games)
+
+    except FileNotFoundError as e:
+        logger.error(f"File not found: {file} - {e}")
+        return pd.DataFrame()
+    except Exception as e:
+        logger.error(f"Unexpected error while processing PGN file: {e}")
+        return pd.DataFrame()
+
 def createPlayersDataFrame(gameInfo: pd.DataFrame) -> pd.DataFrame:
     """
-    Create a DataFrame of players from the game information DataFrame.
+    Create a DataFrame of players from the raw PGN DataFrame.
+    :param: gameInfo: DataFrame containing raw PGN information.
+    :return: DataFrame containing player information.
     """
-    players = pd.melt(gameInfo, value_vars=["White", "Black"], var_name="Color", value_name="PlayerName")
-    players = players.drop(columns=["Color"])
-    players["Title"] = pd.melt(gameInfo, value_vars=["WhiteTitle", "BlackTitle"], var_name="Color", value_name="Title")["Title"].values
-    players.drop_duplicates(["PlayerName"], inplace=True)
-    players["id"] = [str(uuid.uuid4()) for _ in range(len(players))]
+    try:
+        logger.info("Starting to create players DataFrame")
 
-    # Combine white and black players with their respective Elo ratings
-    player_elo = pd.concat([
-        gameInfo[["White", "WhiteElo"]].rename(columns={"White": "PlayerName", "WhiteElo": "MaxElo"}),
-        gameInfo[["Black", "BlackElo"]].rename(columns={"Black": "PlayerName", "BlackElo": "MaxElo"})
-    ])
+        if gameInfo.empty:
+            logger.warning("Game information DataFrame is empty. Returning an empty players DataFrame.")
+            return pd.DataFrame()
 
-    # Group by player name and calculate the maximum Elo
-    max_elo_table = player_elo.groupby("PlayerName", as_index=False).agg({"MaxElo": "max"})
+        names = pd.melt(gameInfo, value_vars=["White", "Black"], var_name="Color", value_name="name")
+        titles = pd.melt(gameInfo, value_vars=["WhiteTitle", "BlackTitle"], var_name="Color", value_name="title")
+        players = pd.DataFrame({"name": names["name"], "title": titles["title"]})
+        players = players.drop_duplicates(subset=["name"]).reset_index(drop=True)
 
-    # Merge the Elo ratings with the players DataFrame
-    players = pd.merge(players, max_elo_table, on="PlayerName", how="left")
+        players["id"] = [str(uuid.uuid4()) for _ in range(len(players))]
 
-    return players
+        player_elo = pd.concat([
+            gameInfo[["White", "WhiteElo"]].rename(columns={"White": "name", "WhiteElo": "max_elo"}),
+            gameInfo[["Black", "BlackElo"]].rename(columns={"Black": "name", "BlackElo": "max_elo"})
+        ])
+        max_elo_table = player_elo.groupby("name", as_index=False).agg({"max_elo": "max"})
+        players = pd.merge(players, max_elo_table, on="name", how="left")
 
-def createGamesDataFrame(gameInfo: pd.DataFrame, players: pd.DataFrame) -> pd.DataFrame:
+        logger.info(f"Finished creating players DataFrame. Total players: {len(players)}")
+        return players
+
+    except KeyError as e:
+        logger.error(f"Missing expected column in gameInfo DataFrame: {e}")
+        return pd.DataFrame()
+    except Exception as e:
+        logger.error(f"Unexpected error while creating players DataFrame: {e}")
+        return pd.DataFrame()
+
+def createGamesDataFrame(gameInfo: pd.DataFrame, players: pd.DataFrame, openings: pd.DataFrame) -> pd.DataFrame:
     """
-    Create a DataFrame of games from the game information DataFrame.
+    Create a DataFrame of games from the raw PGN DataFrame.
+    :param: gameInfo: DataFrame containing raw PGN information.
+    :param: players: DataFrame containing player information.
+    :param: openings: DataFrame containing opening information.
+    :return: DataFrame containing game information.
     """
-    # Create a DataFrame for the games
-    games = pd.DataFrame(columns=["id", "White", "Black", "Result", "WhiteElo", "BlackElo", "Date", "TimeControl", "ECO"], index=[])
-    games["id"] = [str(uuid.uuid4()) for _ in range(len(gameInfo))]
+    try:
+        logger.info("Starting to create games DataFrame")
 
-    player_id_map = players.set_index("PlayerName")["id"].to_dict()
-    games["White"] = gameInfo["White"].parallel_map(player_id_map)
-    games["Black"] = gameInfo["Black"].parallel_map(player_id_map)
+        if gameInfo.empty or players.empty or openings.empty:
+            logger.warning("One or more input DataFrames are empty. Returning an empty games DataFrame.")
+            return pd.DataFrame()
 
-    # Map the Result column based on the winner
-    games["Result"] = gameInfo.parallel_apply(
-        lambda row: "D" if row["Result"] == "1/2-1/2" else
-                    "W" if row["Result"] == "1-0" else
-                    "B" if row["Result"] == "0-1" else
-                    None,
-        axis=1
-    )
-    games["WhiteElo"] = gameInfo["WhiteElo"]
-    games["BlackElo"] = gameInfo["BlackElo"]
-    games["Date"] = gameInfo["UTCDate"]
-    games["TimeControl"] = gameInfo["TimeControl"]
-    games["ECO"] = gameInfo["ECO"]
+        games = pd.DataFrame(columns=["id", "white", "black", "result", "white_elo", "black_elo", "date_time", "time_control", "opening"], index=[])
 
-    return games
+        games["id"] = [str(uuid.uuid4()) for _ in range(len(gameInfo))]
+
+        player_id_map = players.set_index("name")["id"].to_dict()
+        games["white"] = gameInfo["White"].parallel_map(player_id_map)
+        games["black"] = gameInfo["Black"].parallel_map(player_id_map)
+
+        games["result"] = gameInfo.parallel_apply(
+            lambda row: "D" if row["Result"] == "1/2-1/2" else
+                        "W" if row["Result"] == "1-0" else
+                        "B" if row["Result"] == "0-1" else
+                        None,
+            axis=1
+        )
+
+        games["white_elo"] = gameInfo["WhiteElo"]
+        games["black_elo"] = gameInfo["BlackElo"]
+        games["date_time"] = gameInfo["UTCDate"].astype(str) + " " + gameInfo["UTCTime"].astype(str)
+        games["time_control"] = gameInfo["TimeControl"]
+
+        opening_id_map = openings.set_index("name")["id"].to_dict()
+        games["opening"] = gameInfo["Opening"].parallel_map(opening_id_map)
+
+        logger.info(f"Finished creating games DataFrame. Total games: {len(games)}")
+        return games
+
+    except KeyError as e:
+        logger.error(f"Missing expected column in input DataFrames: {e}")
+        return pd.DataFrame()
+    except Exception as e:
+        logger.error(f"Unexpected error while creating games DataFrame: {e}")
+        return pd.DataFrame()
+
+def createOpeningsDataFrame(openingFiles: list[str]) -> pd.DataFrame:
+    """
+    Create a DataFrame of openings from the lichess opening database's TSV files.
+    :param: openingFiles: List of paths to TSV files containing opening information.
+    :return: DataFrame containing opening information.
+    """
+    try:
+        logger.info("Starting to create openings DataFrame")
+        openings = []
+
+        for openingFile in openingFiles:
+            try:
+                logger.info(f"Processing opening file: {openingFile}")
+                with open(openingFile, "r") as f:
+                    AtoE = pd.read_csv(f, sep="\t", header=0, names=["eco", "name", "pgn"])
+                    openings.append(AtoE)
+            except FileNotFoundError as e:
+                logger.error(f"Opening file not found: {openingFile} - {e}")
+
+        openingsDataFrame = pd.concat(openings, ignore_index=True)
+        openingsDataFrame["id"] = [str(uuid.uuid4()) for _ in range(len(openingsDataFrame))]
+
+        logger.info(f"Finished creating openings DataFrame. Total openings: {len(openingsDataFrame)}")
+        return openingsDataFrame
+    except Exception as e:
+        logger.error(f"Unexpected error while creating players DataFrame: {e}")
+        return pd.DataFrame()
