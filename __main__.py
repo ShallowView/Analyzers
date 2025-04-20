@@ -1,7 +1,7 @@
 import pandas as pd
+import psycopg2
 
-from CSVtoData import *
-from DataToSQL import *
+from ProcessPGN import *
 
 # INPUT FILES
 PGNFile = "Datasets/lichess_elite_2020-06.pgn"
@@ -21,8 +21,10 @@ db_params = {
     "port": 5432
 }
 
+# Read PGN file and convert to DataFrame
 rawPGN = PGNtoDataFrame(PGNFile)
 
+# Create DataFrames for players, openings, and games
 players = createPlayersDataFrame(rawPGN)
 openings = createOpeningsDataFrame(lichessOpeningTSVs)
 games = createGamesDataFrame(rawPGN, players, openings)
@@ -35,6 +37,7 @@ openings.to_csv(OpeningsCSV, index=False)
 # Connect to the database
 connection = psycopg2.connect(**db_params)
 
-insert_data(connection, "player", players)
-insert_data(connection, "opening", openings)
-# insert_data(connection, "game", games)
+# Insert data into PostgreSQL tables
+insertDataToPostgres(connection, "player", players)
+insertDataToPostgres(connection, "opening", openings)
+insertDataToPostgres(connection, "game", games)
