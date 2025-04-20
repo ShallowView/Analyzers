@@ -1,7 +1,9 @@
 import pandas as pd
+import psycopg2
 from pandarallel import pandarallel
 import uuid
 import logging
+from tqdm import tqdm
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -116,7 +118,7 @@ def createGamesDataFrame(gameInfo: pd.DataFrame, players: pd.DataFrame, openings
         games["time_control"] = gameInfo["TimeControl"]
 
         opening_id_map = openings.set_index("name")["id"].to_dict()
-        games["opening"] = gameInfo["Opening"].parallel_map(opening_id_map)
+        games["opening"] = gameInfo["Opening"].parallel_map(lambda x: opening_id_map.get(x, opening_id_map.get(x.split(":")[0])))
 
         logger.info(f"Finished creating games DataFrame. Total games: {len(games)}")
         return games
@@ -155,3 +157,34 @@ def createOpeningsDataFrame(openingFiles: list[str]) -> pd.DataFrame:
     except Exception as e:
         logger.error(f"Unexpected error while creating players DataFrame: {e}")
         return pd.DataFrame()
+
+def insertDataToPostgres(connection : psycopg2.extensions.connection, table_name : str, dataframe : pd.DataFrame, chunk_size: int = 1000):
+    """
+    Insert data from a pandas DataFrame into the PostgreSQL table.
+    :param connection: PostgreSQL database connection.
+    :param table_name: Name of the table to insert data into.
+    :param dataframe: DataFrame containing the data to be inserted.
+    :param chunk_size: Number of rows to insert at a time.
+    """
+    logger.info(f"Starting data insertion into table '{table_name}'.")
+    try:
+        with connection.cursor() as cursor:
+            # Generate the SQL query for batch insertion
+            columns = ', '.join(dataframe.columns)
+            values = ', '.join(['%s'] * len(dataframe.columns))
+            insert_query = f"INSERT INTO {table_name} ({columns}) VALUES ({values}) ON CONFLICT DO NOTHING "
+
+            # Convert DataFrame to a list of tuples for batch insertion
+            data = [tuple(row) for row in dataframe.itertuples(index=False)]
+
+            # Process data in chunks
+            for i in tqdm(range(0, len(data), chunk_size), desc="Inserting rows"):
+                chunk = data[i:i + chunk_size]
+                cursor.executemany(insert_query, chunk)
+
+            connection.commit()
+
+        logger.info(f"Data insertion completed for table '{table_name}'. Total rows inserted: {len(dataframe)}.")
+    except Exception as e:
+        logger.error(f"Error during data insertion into table '{table_name}': {e}")
+        connection.rollback()
