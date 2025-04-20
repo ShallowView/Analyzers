@@ -6,7 +6,7 @@ DROP TABLE IF EXISTS opening;
 -- Create the player table
 CREATE TABLE IF NOT EXISTS player (
     id UUID PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
+    name VARCHAR(50) NOT NULL UNIQUE,
     title VARCHAR(10),
     max_elo INT
 );
@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS opening (
     id UUID PRIMARY KEY,
     eco VARCHAR(3) NOT NULL,
     name VARCHAR(100) NOT NULL,
-    pgn TEXT NOT NULL
+    pgn TEXT NOT NULL,
+    UNIQUE (name, pgn)
 );
 
 -- Create the game table
@@ -29,5 +30,6 @@ CREATE TABLE IF NOT EXISTS game (
     black_elo INT,
     date_time TIMESTAMP,
     time_control VARCHAR(50),
-    opening UUID REFERENCES opening(id)
+    opening UUID REFERENCES opening(id),
+    UNIQUE (white, black, date_time)
 );
