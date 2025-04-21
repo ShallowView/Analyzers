@@ -1,8 +1,6 @@
 import multiprocessing
-
 import pandas as pd
 import psycopg2
-from pandarallel import pandarallel
 import uuid
 import logging
 from tqdm import tqdm
@@ -12,11 +10,9 @@ from concurrent.futures import ProcessPoolExecutor
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-pandarallel.initialize(progress_bar=False, verbose=0)
-
 MAX_CORES = multiprocessing.cpu_count() - 1
 
-def setMaxCores(cores: int = multiprocessing.cpu_count() - 1):
+def setMaxCores(cores: int = multiprocessing.cpu_count() - 1) -> None:
     """
     Set the maximum number of cores to be used for parallel processing.
     :param cores: Number of cores to be used.
@@ -28,7 +24,7 @@ def setMaxCores(cores: int = multiprocessing.cpu_count() - 1):
     else:
         logger.warning("Invalid core count. Using default value.")
 
-def __process_pgn_file(file):
+def __process_pgn_file(file : str) -> pd.DataFrame:
     """
     Process a single PGN file and return a DataFrame of games.
     :param file: Path to the PGN file.
@@ -75,14 +71,11 @@ def PGNtoDataFrame(files: list[str]) -> pd.DataFrame:
         logger.info(f"Total games processed: {len(gameInfo)}")
         return gameInfo
 
-    except FileNotFoundError as e:
-        logger.error(f"File not found: {file} - {e}")
-        return pd.DataFrame()
     except Exception as e:
-        logger.error(f"Unexpected error while processing PGN file: {e}")
+        logger.error(f"Unexpected error while processing PGN files: {e}")
         return pd.DataFrame()
 
-def __process_players_chunk(chunk):
+def __process_players_chunk(chunk : pd.DataFrame, DBplayers : pd.DataFrame) -> pd.DataFrame:
     """
     Process a chunk of the gameInfo DataFrame to extract player information.
     :param chunk: Chunk of the gameInfo DataFrame.
@@ -91,22 +84,20 @@ def __process_players_chunk(chunk):
     names = pd.melt(chunk, value_vars=["White", "Black"], var_name="Color", value_name="name")
     titles = pd.melt(chunk, value_vars=["WhiteTitle", "BlackTitle"], var_name="Color", value_name="title")
     players = pd.DataFrame({"name": names["name"], "title": titles["title"]})
-    players = players.drop_duplicates(subset=["name"]).reset_index(drop=True)
 
-    player_elo = pd.concat([
-        chunk[["White", "WhiteElo"]].rename(columns={"White": "name", "WhiteElo": "max_elo"}),
-        chunk[["Black", "BlackElo"]].rename(columns={"Black": "name", "BlackElo": "max_elo"})
-    ])
-    max_elo_table = player_elo.groupby("name", as_index=False).agg({"max_elo": "max"})
-    players = pd.merge(players, max_elo_table, on="name", how="left")
+    players = players.drop_duplicates(subset=["name"]).reset_index(drop=True)
+    # Filter out players already in the database
+    if not DBplayers.empty:
+        players = players[~players["name"].isin(DBplayers["name"])]
 
     players["id"] = [str(uuid.uuid4()) for _ in range(len(players))]
     return players
 
-def createPlayersDataFrame(gameInfo: pd.DataFrame, chunk_size: int = 10000) -> pd.DataFrame:
+def createPlayersDataFrame(gameInfo: pd.DataFrame, DBplayers : pd.DataFrame, chunk_size: int = 10000) -> pd.DataFrame:
     """
     Create a DataFrame of players from the raw PGN DataFrame using multiprocessing.
     :param gameInfo: DataFrame containing raw PGN information.
+    :param DBplayers: DataFrame containing player names, ID, title and maxElo from the PostgreSQL database.
     :param chunk_size: Number of rows to process at a time.
     :return: DataFrame containing player information.
     """
@@ -123,7 +114,7 @@ def createPlayersDataFrame(gameInfo: pd.DataFrame, chunk_size: int = 10000) -> p
 
         # Process chunks in parallel
         with ProcessPoolExecutor(max_workers=MAX_CORES) as executor:
-            players_chunks = list(tqdm(executor.map(__process_players_chunk, chunks),
+            players_chunks = list(tqdm(executor.map(__process_players_chunk, chunks, [DBplayers] * len(chunks)),
                                        total=len(chunks), desc="Processing player chunks"))
 
         # Combine all chunks into a single DataFrame
@@ -136,7 +127,7 @@ def createPlayersDataFrame(gameInfo: pd.DataFrame, chunk_size: int = 10000) -> p
         logger.error(f"Unexpected error while creating players DataFrame: {e}")
         return pd.DataFrame()
 
-def __process_games(infoChunk, player_id_map, opening_id_map):
+def __process_games(infoChunk : pd.DataFrame, player_id_map : dict, opening_id_map : dict) -> pd.DataFrame:
     """
     Process a single chunk of the gameInfo DataFrame.
     :param infoChunk: Chunk of the gameInfo DataFrame.
@@ -239,7 +230,7 @@ def createOpeningsDataFrame(openingFiles: list[str]) -> pd.DataFrame:
         logger.error(f"Unexpected error while creating players DataFrame: {e}")
         return pd.DataFrame()
 
-def __insert_chunk_to_postgres(chunk : pd.DataFrame, connection_params : dict, table_name : str):
+def __insert_chunk_to_postgres(chunk : pd.DataFrame, connection_params : dict, table_name : str) -> None:
     """
     Insert a chunk of data into the PostgreSQL table.
     :param chunk: Data chunk to insert.
@@ -261,7 +252,7 @@ def __insert_chunk_to_postgres(chunk : pd.DataFrame, connection_params : dict, t
     except Exception as e:
         logging.error(f"Error inserting chunk into table '{table_name}': {e}")
 
-def insertDataToPostgres(connection_params : dict, table_name : str, dataframe : pd.DataFrame, chunk_size: int = 1000):
+def insertDataToPostgres(connection_params : dict, table_name : str, dataframe : pd.DataFrame, chunk_size: int = 1000) -> None:
     """
     Insert data from a pandas DataFrame into the PostgreSQL table.
     :param connection_params: Dictionary of database connection parameters.
