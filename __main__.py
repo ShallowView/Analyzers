@@ -27,11 +27,9 @@ rawPGN = PGNtoDataFrame(PGNFile)
 # Create DataFrames for players, openings, and games
 players = createPlayersDataFrame(rawPGN)
 openings = createOpeningsDataFrame(lichessOpeningTSVs)
-games = createGamesDataFrame(rawPGN, players, openings)
 
 # Save DataFrames to CSV files
 players.to_csv(PlayersCSV, index=False)
-games.to_csv(GamesCSV, index=False)
 openings.to_csv(OpeningsCSV, index=False)
 
 # Connect to the database
@@ -40,4 +38,15 @@ connection = psycopg2.connect(**db_params)
 # Insert data into PostgreSQL tables
 insertDataToPostgres(connection, "player", players)
 insertDataToPostgres(connection, "opening", openings)
+
+with connection.cursor() as cursor:
+    cursor.execute("SELECT id, name FROM player")
+    players = pd.DataFrame(cursor.fetchall(), columns=["id", "name"])
+
+    cursor.execute("SELECT id, name, pgn FROM opening")
+    openings = pd.DataFrame(cursor.fetchall(), columns=["id", "name", "pgn"])
+
+games = createGamesDataFrame(rawPGN, players, openings)
+games.to_csv(GamesCSV, index=False)
+
 insertDataToPostgres(connection, "game", games)
