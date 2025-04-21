@@ -1,18 +1,18 @@
 -- Reset already existing tables
-DROP TABLE IF EXISTS game;
-DROP TABLE IF EXISTS player;
-DROP TABLE IF EXISTS opening;
+DROP TABLE IF EXISTS games;
+DROP TABLE IF EXISTS players;
+DROP TABLE IF EXISTS openings;
 
--- Create the player table
-CREATE TABLE IF NOT EXISTS player (
+-- Create the players table
+CREATE TABLE IF NOT EXISTS players (
     id UUID PRIMARY KEY,
     name VARCHAR(50) NOT NULL UNIQUE,
     title VARCHAR(10),
     max_elo INT
 );
 
--- Create the opening table
-CREATE TABLE IF NOT EXISTS opening (
+-- Create the openings table
+CREATE TABLE IF NOT EXISTS openings (
     id UUID PRIMARY KEY,
     eco VARCHAR(3) NOT NULL,
     name VARCHAR(100) NOT NULL,
@@ -20,16 +20,43 @@ CREATE TABLE IF NOT EXISTS opening (
     UNIQUE (name, pgn)
 );
 
--- Create the game table
-CREATE TABLE IF NOT EXISTS game (
+-- Create the games table
+CREATE TABLE IF NOT EXISTS games (
     id UUID PRIMARY KEY,
-    white UUID NOT NULL REFERENCES player(id),
-    black UUID NOT NULL REFERENCES player(id),
+    white UUID NOT NULL REFERENCES players(id),
+    black UUID NOT NULL REFERENCES players(id),
     result CHAR(1) CHECK (result IN ('W', 'B', 'D')),
     white_elo INT,
     black_elo INT,
     date_time TIMESTAMP,
     time_control VARCHAR(50),
-    opening UUID REFERENCES opening(id),
+    opening UUID REFERENCES openings(id),
     UNIQUE (white, black, date_time)
 );
+
+-- Create the function to update the max_elo field in the players table
+CREATE OR REPLACE FUNCTION update_players_max_elo()
+RETURNS void AS $$
+BEGIN
+    UPDATE players
+    SET max_elo = subquery.max_elo
+    FROM (
+        SELECT id, MAX(max_elo) AS max_elo
+        FROM (
+            SELECT players.id, MAX(games.white_elo) AS max_elo
+            FROM games
+            JOIN players ON players.id = games.white
+            GROUP BY players.id
+
+            UNION
+
+            SELECT players.id, MAX(games.black_elo) AS max_elo
+            FROM games
+            JOIN players ON players.id = games.black
+            GROUP BY players.id
+        ) AS combined
+        GROUP BY id
+    ) AS subquery
+    WHERE players.id = subquery.id;
+END;
+$$ LANGUAGE plpgsql;
