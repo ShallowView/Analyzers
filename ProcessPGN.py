@@ -1,3 +1,5 @@
+import multiprocessing
+
 import pandas as pd
 import psycopg2
 from pandarallel import pandarallel
@@ -11,6 +13,20 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 pandarallel.initialize(progress_bar=False, verbose=0)
+
+MAX_CORES = multiprocessing.cpu_count() - 1
+
+def setMaxCores(cores: int = multiprocessing.cpu_count() - 1):
+    """
+    Set the maximum number of cores to be used for parallel processing.
+    :param cores: Number of cores to be used.
+    """
+    global MAX_CORES
+    if cores > 0:
+        MAX_CORES = cores
+        logger.info(f"Max cores set to {MAX_CORES}")
+    else:
+        logger.warning("Invalid core count. Using default value.")
 
 def PGNtoDataFrame(file: str) -> pd.DataFrame:
     """
@@ -143,7 +159,7 @@ def createGamesDataFrame(gameInfo: pd.DataFrame, players: pd.DataFrame, openings
                   for start in range(0, len(gameInfo), chunk_size)]
 
         # Process chunks in parallel
-        with ProcessPoolExecutor(max_workers=3) as executor:
+        with ProcessPoolExecutor(max_workers=MAX_CORES) as executor:
             games_chunks = (list(tqdm(executor.map(__process_chunk, chunks, [player_id_map] * len(chunks), [opening_id_map] * len(chunks)),
                                 total=len(chunks), desc="Processing chunks")))
 
