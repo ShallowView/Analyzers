@@ -4,13 +4,14 @@ import psycopg2
 from ProcessPGN import *
 
 # INPUT FILES
-PGNFile = "Datasets/lichess_elite_2020-06.pgn"
-lichessOpeningTSVs = ["Datasets/a.tsv", "Datasets/b.tsv", "Datasets/c.tsv", "Datasets/d.tsv", "Datasets/e.tsv"]
-
-# OUTPUT FILES
-PlayersCSV = "tmp/players.csv"
-GamesCSV = "tmp/games.csv"
-OpeningsCSV = "tmp/openings.csv"
+PGNFiles = ["Datasets/lichess_elite_2020-06.pgn",
+            "Datasets/lichess_elite_2020-07.pgn",
+            "Datasets/lichess_elite_2020-08.pgn"]
+lichessOpeningTSVs = ["Datasets/a.tsv",
+                      "Datasets/b.tsv",
+                      "Datasets/c.tsv",
+                      "Datasets/d.tsv",
+                      "Datasets/e.tsv"]
 
 # Database connection parameters
 db_params = {
@@ -21,32 +22,42 @@ db_params = {
     "port": 5432
 }
 
-# Read PGN file and convert to DataFrame
-rawPGN = PGNtoDataFrame(PGNFile)
-
-# Create DataFrames for players, openings, and games
-players = createPlayersDataFrame(rawPGN)
-openings = createOpeningsDataFrame(lichessOpeningTSVs)
-
-# Save DataFrames to CSV files
-players.to_csv(PlayersCSV, index=False)
-openings.to_csv(OpeningsCSV, index=False)
+# Limits total number of cores used, by default it uses all available cores - 1
+setMaxCores()
 
 # Connect to the database
 connection = psycopg2.connect(**db_params)
 
-# Insert data into PostgreSQL tables
-insertDataToPostgres(connection, "player", players)
-insertDataToPostgres(connection, "opening", openings)
+# Read PGN file and convert to DataFrame
+rawPGN = PGNtoDataFrame(PGNFiles)
+
+# Create DataFrame for openings and insert into PostgreSQL
+openings = createOpeningsDataFrame(lichessOpeningTSVs)
+insertDataToPostgres(db_params, "openings", openings)
 
 with connection.cursor() as cursor:
-    cursor.execute("SELECT id, name FROM player")
+    cursor.execute("SELECT id, name, title, max_elo FROM players")
+    DBplayers = pd.DataFrame(cursor.fetchall(), columns=["id", "name", "title", "max_elo"])
+
+# Create DataFrame for new players and insert into PostgreSQL
+players = createPlayersDataFrame(rawPGN, DBplayers)
+insertDataToPostgres(db_params, "players", players)
+
+# Get updated player and opening data from the database
+with connection.cursor() as cursor:
+    cursor.execute("SELECT id, name FROM players")
     players = pd.DataFrame(cursor.fetchall(), columns=["id", "name"])
 
-    cursor.execute("SELECT id, name, pgn FROM opening")
+    cursor.execute("SELECT id, name, pgn FROM openings")
     openings = pd.DataFrame(cursor.fetchall(), columns=["id", "name", "pgn"])
 
+# Create the games DataFrame and insert into PostgreSQL
 games = createGamesDataFrame(rawPGN, players, openings)
-games.to_csv(GamesCSV, index=False)
+insertDataToPostgres(db_params, "games", games)
 
-insertDataToPostgres(connection, "game", games)
+# Update players' max ELO in the database
+with connection.cursor() as cursor:
+    cursor.execute("SELECT update_players_max_elo()")
+    connection.commit()
+
+connection.close()
