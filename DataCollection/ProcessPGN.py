@@ -1,6 +1,6 @@
 import multiprocessing
 import pandas as pd
-import psycopg2
+import psycopg
 import uuid
 import logging
 from tqdm import tqdm
@@ -75,10 +75,11 @@ def PGNtoDataFrame(files: list[str]) -> pd.DataFrame:
         logger.error(f"Unexpected error while processing PGN files: {e}")
         return pd.DataFrame()
 
-def __process_players_chunk(chunk : pd.DataFrame, DBplayers : pd.DataFrame) -> pd.DataFrame:
+def __process_players_chunk(chunk : pd.DataFrame, DBPlayers : pd.DataFrame) -> pd.DataFrame:
     """
     Process a chunk of the gameInfo DataFrame to extract player information.
     :param chunk: Chunk of the gameInfo DataFrame.
+    :param DBPlayers: DataFrame containing player names and ID from the PostgreSQL database.
     :return: DataFrame containing player information for the chunk.
     """
     names = pd.melt(chunk, value_vars=["White", "Black"], var_name="Color", value_name="name")
@@ -87,17 +88,17 @@ def __process_players_chunk(chunk : pd.DataFrame, DBplayers : pd.DataFrame) -> p
 
     players = players.drop_duplicates(subset=["name"]).reset_index(drop=True)
     # Filter out players already in the database
-    if not DBplayers.empty:
-        players = players[~players["name"].isin(DBplayers["name"])]
+    if not DBPlayers.empty:
+        players = players[~players["name"].isin(DBPlayers["name"])]
 
     players["id"] = [str(uuid.uuid4()) for _ in range(len(players))]
     return players
 
-def createPlayersDataFrame(gameInfo: pd.DataFrame, DBplayers : pd.DataFrame, chunk_size: int = 10000) -> pd.DataFrame:
+def createPlayersDataFrame(gameInfo: pd.DataFrame, DBPlayers : pd.DataFrame, chunk_size: int = 10000) -> pd.DataFrame:
     """
     Create a DataFrame of players from the raw PGN DataFrame using multiprocessing.
     :param gameInfo: DataFrame containing raw PGN information.
-    :param DBplayers: DataFrame containing player names, ID, title and maxElo from the PostgreSQL database.
+    :param DBPlayers: DataFrame containing player names and ID from the PostgreSQL database.
     :param chunk_size: Number of rows to process at a time.
     :return: DataFrame containing player information.
     """
@@ -114,13 +115,13 @@ def createPlayersDataFrame(gameInfo: pd.DataFrame, DBplayers : pd.DataFrame, chu
 
         # Process chunks in parallel
         with ProcessPoolExecutor(max_workers=MAX_CORES) as executor:
-            players_chunks = list(tqdm(executor.map(__process_players_chunk, chunks, [DBplayers] * len(chunks)),
+            players_chunks = list(tqdm(executor.map(__process_players_chunk, chunks, [DBPlayers] * len(chunks)),
                                        total=len(chunks), desc="Processing player chunks"))
 
         # Combine all chunks into a single DataFrame
         players = pd.concat(players_chunks, ignore_index=True).drop_duplicates(subset=["name"]).reset_index(drop=True)
 
-        logger.info(f"Finished creating players DataFrame. Total players: {len(players)}")
+        logger.info(f"Finished creating players DataFrame. Total new players: {len(players)}")
         return players
 
     except Exception as e:
@@ -238,14 +239,21 @@ def __insert_chunk_to_postgres(chunk : pd.DataFrame, connection_params : dict, t
     :param table_name: Name of the table to insert data into.
     """
     try:
-        connection = psycopg2.connect(**connection_params)
+        connection = psycopg.connect(**connection_params)
         with connection.cursor() as cursor:
-            # Prepare insert query
-            columns = ', '.join(chunk.columns)
-            values = ', '.join(['%s'] * len(chunk.columns))
-            insert_query = f"INSERT INTO {table_name} ({columns}) VALUES ({values}) ON CONFLICT DO NOTHING"
+
+            # Prepare the insert query
+            insert_query = psycopg.sql.SQL(
+                "INSERT INTO {table} ({columns}) VALUES ({values}) ON CONFLICT DO NOTHING"
+            ).format(
+                table=psycopg.sql.Identifier(table_name),
+                columns=psycopg.sql.SQL(", ").join([psycopg.sql.Identifier(col) for col in chunk.columns]),
+                values=psycopg.sql.SQL(", ").join(psycopg.sql.Placeholder() for _ in chunk.columns)
+            )
+
             # Execute the insert query
             cursor.executemany(insert_query, [tuple(row) for row in chunk.itertuples(index=False)])
+
         # Commit the transaction
         connection.commit()
         connection.close()
@@ -273,3 +281,90 @@ def insertDataToPostgres(connection_params : dict, table_name : str, dataframe :
         logger.info(f"Data insertion completed for table '{table_name}'. Total rows inserted: {len(dataframe)}.")
     except Exception as e:
         logger.error(f"Error during data insertion into table '{table_name}': {e}")
+
+def updatePlayersMaxElo(connection_params : dict) -> None:
+    """
+    Update the max ELO of players in the PostgreSQL database.
+    :param connection_params: Dictionary of database connection parameters.
+    """
+    try:
+        with psycopg.connect(**connection_params, autocommit=True) as connection:
+            connection.execute("SELECT update_players_max_elo()")
+
+        logger.info("Players' max ELO updated successfully.")
+    except Exception as e:
+        logger.error(f"Error updating players' max ELO: {e}")
+
+def addNewPGNtoDatabase(PGNFiles: list[str], db_params: dict, table_names: dict) -> None:
+    """
+    Add new PGN files to the PostgreSQL database.
+    :param PGNFiles: List of paths to the PGN files.
+    :param db_params: Dictionary of database connection parameters.
+    :param table_names: Dictionary containing the table names for "players", "openings", and "games" in the database.
+    """
+    try:
+        players_table = table_names.get("players", "players")
+        openings_table = table_names.get("openings", "openings")
+        games_table = table_names.get("games", "games")
+
+        # Read PGN files and convert to DataFrame
+        rawPGN = PGNtoDataFrame(PGNFiles)
+
+        # Connect to the database
+        with psycopg.connect(**db_params) as connection:
+            # Get current existing players in the database
+            with connection.cursor() as cursor:
+                query = psycopg.sql.SQL("SELECT id, name FROM {player_table}").format(
+                    player_table=psycopg.sql.Identifier(players_table)
+                )
+                players_data = cursor.execute(query).fetchall()
+                DBplayers = pd.DataFrame(players_data, columns=["id", "name"])
+
+            # Create DataFrame for new players and insert into PostgreSQL
+            players = createPlayersDataFrame(rawPGN, DBplayers)
+            insertDataToPostgres(db_params, players_table, players)
+
+            # Get updated player and opening data from the database
+            with connection.cursor() as cursor:
+                query = psycopg.sql.SQL("SELECT id, name FROM {player_table}").format(
+                    player_table=psycopg.sql.Identifier(players_table)
+                )
+                players_data = cursor.execute(query).fetchall()
+                players = pd.DataFrame(players_data, columns=["id", "name"])
+
+                query = psycopg.sql.SQL("SELECT id, name, pgn FROM {opening_table}").format(
+                    opening_table=psycopg.sql.Identifier(openings_table)
+                )
+                openings_data = cursor.execute(query).fetchall()
+                openings = pd.DataFrame(openings_data, columns=["id", "name", "pgn"])
+
+            # Create the games DataFrame and insert into PostgreSQL
+            games = createGamesDataFrame(rawPGN, players, openings)
+            insertDataToPostgres(db_params, games_table, games)
+
+            # Update players' max ELO in the database
+            updatePlayersMaxElo(db_params)
+
+        logger.info("PGN files successfully added to the database.")
+
+    except Exception as e:
+        logger.error(f"Error in addNewPGNtoDatabase: {e}")
+
+def addOpeningsToDatabase(openingFiles: list[str], db_params: dict, table_names: dict) -> None:
+    """
+    Add new openings to the PostgreSQL database.
+    :param openingFiles: List of paths to the TSV files containing opening information.
+    :param db_params: Dictionary of database connection parameters.
+    :param table_names: Dictionary containing the table names for "openings" in the database.
+    """
+    try:
+        openings_table = table_names.get("openings", "openings")
+
+        # Create DataFrame for openings and insert into PostgreSQL
+        openings = createOpeningsDataFrame(openingFiles)
+        insertDataToPostgres(db_params, openings_table, openings)
+
+        logger.info("Openings successfully added to the database.")
+
+    except Exception as e:
+        logger.error(f"Error in addOpeningsToDatabase: {e}")
