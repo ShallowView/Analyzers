@@ -10,9 +10,19 @@ from concurrent.futures import ProcessPoolExecutor
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-MAX_CORES = multiprocessing.cpu_count() - 1
+MAX_CORES = max(multiprocessing.cpu_count()//5*4, multiprocessing.cpu_count()%5 - 1, 1)  # Default to 80% of available cores
 
-def setMaxCores(cores: int = multiprocessing.cpu_count() - 1) -> None:
+global_connection = None
+
+def __connection_initializer(connection_params:dict)->None:
+    """
+    Initialize a global connection for each process in multiprocessing.
+    :param connection_params: Dictionary of database connection parameters.
+    """
+    global global_connection
+    global_connection = psycopg.connect(**connection_params)
+
+def setMaxCores(cores: int = max(multiprocessing.cpu_count()//5*4, multiprocessing.cpu_count()%5 - 1, 1)) -> None:
     """
     Set the maximum number of cores to be used for parallel processing.
     :param cores: Number of cores to be used.
@@ -231,17 +241,15 @@ def createOpeningsDataFrame(openingFiles: list[str]) -> pd.DataFrame:
         logger.error(f"Unexpected error while creating players DataFrame: {e}")
         return pd.DataFrame()
 
-def __insert_chunk_to_postgres(chunk : pd.DataFrame, connection_params : dict, table_name : str) -> None:
+def __insert_chunk_to_postgres(chunk : pd.DataFrame, table_name : str) -> None:
     """
     Insert a chunk of data into the PostgreSQL table.
     :param chunk: Data chunk to insert.
-    :param connection_params: Dictionary of database connection parameters.
     :param table_name: Name of the table to insert data into.
     """
+    global global_connection
     try:
-        connection = psycopg.connect(**connection_params)
-        with connection.cursor() as cursor:
-
+        with global_connection.cursor() as cursor:
             # Prepare the insert query
             insert_query = psycopg.sql.SQL(
                 "INSERT INTO {table} ({columns}) VALUES ({values}) ON CONFLICT DO NOTHING"
@@ -253,10 +261,8 @@ def __insert_chunk_to_postgres(chunk : pd.DataFrame, connection_params : dict, t
 
             # Execute the insert query
             cursor.executemany(insert_query, [tuple(row) for row in chunk.itertuples(index=False)])
-
         # Commit the transaction
-        connection.commit()
-        connection.close()
+        global_connection.commit()
     except Exception as e:
         logging.error(f"Error inserting chunk into table '{table_name}': {e}")
 
@@ -274,8 +280,8 @@ def insertDataToPostgres(connection_params : dict, table_name : str, dataframe :
         chunks = [dataframe.iloc[i:i + chunk_size] for i in range(0, len(dataframe), chunk_size)]
 
         # Use multiprocessing to insert chunks
-        with ProcessPoolExecutor(max_workers=MAX_CORES) as executor:
-            list(tqdm(executor.map(__insert_chunk_to_postgres, chunks, [connection_params] * len(chunks), [table_name] * len(chunks)),
+        with ProcessPoolExecutor(max_workers=MAX_CORES, initializer=__connection_initializer, initargs=(connection_params,)) as executor:
+            list(tqdm(executor.map(__insert_chunk_to_postgres, chunks, [table_name] * len(chunks)),
                       total=len(chunks), desc="Inserting chunks"))
 
         logger.info(f"Data insertion completed for table '{table_name}'. Total rows inserted: {len(dataframe)}.")
