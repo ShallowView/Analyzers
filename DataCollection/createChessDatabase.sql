@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS players (
     title VARCHAR(10),
     max_elo INT
 );
+ALTER TABLE players OWNER TO SVCollaborator; -- Don't run this if you're creating the tables locally
 
 -- Create the openings table
 CREATE TABLE IF NOT EXISTS openings (
@@ -19,6 +20,7 @@ CREATE TABLE IF NOT EXISTS openings (
     pgn TEXT NOT NULL,
     UNIQUE (name, pgn)
 );
+ALTER TABLE openings OWNER TO SVCollaborator; -- Don't run this if you're creating the tables locally
 
 -- Create the games table
 CREATE TABLE IF NOT EXISTS games (
@@ -33,6 +35,7 @@ CREATE TABLE IF NOT EXISTS games (
     opening UUID REFERENCES openings(id),
     UNIQUE (white, black, date_time)
 );
+ALTER TABLE games OWNER TO SVCollaborator; -- Don't run this if you're creating the tables locally
 
 -- Create the function to update the max_elo field in the players table
 CREATE OR REPLACE FUNCTION update_players_max_elo()
