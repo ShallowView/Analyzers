@@ -288,16 +288,17 @@ def insertDataToPostgres(connection_params : dict, table_name : str, dataframe :
     except Exception as e:
         logger.error(f"Error during data insertion into table '{table_name}': {e}")
 
-def updatePlayersMaxElo(connection_params : dict) -> None:
+def updatePlayersElo(connection_params : dict) -> None:
     """
-    Update the max ELO of players in the PostgreSQL database.
+    Update the max and current ELO of players in the PostgreSQL database.
     :param connection_params: Dictionary of database connection parameters.
     """
     try:
         with psycopg.connect(**connection_params, autocommit=True) as connection:
             connection.execute("SELECT update_players_max_elo()")
+            connection.execute("SELECT update_players_current_elo()")
 
-        logger.info("Players' max ELO updated successfully.")
+        logger.info("Players' max and current ELO updated successfully.")
     except Exception as e:
         logger.error(f"Error updating players' max ELO: {e}")
 
@@ -348,8 +349,8 @@ def addNewPGNtoDatabase(PGNFiles: list[str], db_params: dict, table_names: dict)
             games = createGamesDataFrame(rawPGN, players, openings)
             insertDataToPostgres(db_params, games_table, games)
 
-            # Update players' max ELO in the database
-            updatePlayersMaxElo(db_params)
+            # Update players' ELO columns in the database
+            updatePlayersElo(db_params)
 
         logger.info("PGN files successfully added to the database.")
 
