@@ -20,14 +20,14 @@ lichessOpeningTSVs = ["Datasets/a.tsv",
 # Database connection parameters
 db_params_SSL = {
     "dbname": "shallowview",
-    "user": "user", # Replace with your database username
+    "user": "ryanator", # Replace with your database username
     "password": "password", # Replace with your database password
     "host": "s0.net.pimous.dev",
     "port": 31003,
     "sslmode": "require",  # Enforce SSL connection
-    "sslcert": "path/client-certificate.crt",  # Path to client certificate
-    "sslkey": "path/client-key.key",    # Path to client private key
-    "sslrootcert": "path/CA-certificate.chain.crt"   # Path to CA certificate
+    "sslcert": "~/.ssl/Ryan Heuvel.crt",  # Path to client certificate
+    "sslkey": "~/.ssl/Ryan Heuvel.key",    # Path to client private key
+    "sslrootcert": "pimousdev-db.chain.crt"   # Path to CA certificate
 }
 
 db_params_local = {
@@ -48,8 +48,8 @@ tables = {
 # Limits total number of cores used in multiprocessing, by default it's ~80% of the cores, reduce if needed
 setMaxCores()
 
-addOpeningsToDatabase(lichessOpeningTSVs, db_params_SSL, tables)
+# addOpeningsToDatabase(lichessOpeningTSVs, db_params_SSL, tables)
 
-addNewPGNtoDatabase(PGNFiles, db_params_SSL, tables)
-addNewPGNtoDatabase(PGNFiles2, db_params_SSL, tables)
-addNewPGNtoDatabase(PGNFiles3, db_params_SSL, tables)
+# addNewPGNtoDatabase(PGNFiles, db_params_SSL, tables)
+# addNewPGNtoDatabase(PGNFiles2, db_params_SSL, tables)
+# addNewPGNtoDatabase(PGNFiles3, db_params_SSL, tables)
