@@ -5,7 +5,9 @@ from Analyses.base import *
 ADMIN ZONE : delcaring filenames and other
 """ 
 storage_directory = set_storage_directory(DEFAULT_STORAGE_DIR, __file__)
+ #files in storage directory
 heatmap_file_location = storage_directory + "heatmap_relation_title_and_time_control.png"
+# files in parent directory
 test_csv_file_location  = storage_directory + "../" + "test_csv_relation_title_and_time_control.csv"
 
 
@@ -43,7 +45,7 @@ LIMIT {TEST_ROW_COUNT};"""
 ### START OF ANALYSIS ##########################################################################################################
 
 if not file_exists(test_csv_file_location):
-    fetch_sql_and_save_to_csv(title_and_time_control_query,DB_STR_ENGINE, test_csv_file_location)
+    fetch_sql_and_save_to_csv(query=title_and_time_control_query, output_csv_path=test_csv_file_location)
         
 games_with_titles_df = pd.read_csv(test_csv_file_location)
 
