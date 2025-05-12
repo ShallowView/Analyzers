@@ -1,12 +1,14 @@
-
 from Analyses.base import *
 
 """
 ADMIN ZONE : delcaring filenames and other
 """ 
 storage_directory = set_storage_directory(DEFAULT_STORAGE_DIR, __file__)
- #files in storage directory
+json_storage_directory = set_storage_directory("json", __file__)
+# files in storage directory
 heatmap_file_location = storage_directory + "heatmap_relation_title_and_time_control.png"
+# files in json storage
+heatmap_json = json_storage_directory + "heatmap.json"
 # files in parent directory
 test_csv_file_location  = storage_directory + "../" + "test_csv_relation_title_and_time_control.csv"
 
@@ -44,10 +46,7 @@ LIMIT {TEST_ROW_COUNT};"""
 
 ### START OF ANALYSIS ##########################################################################################################
 
-if not file_exists(test_csv_file_location):
-    fetch_sql_and_save_to_csv(query=title_and_time_control_query, output_csv_path=test_csv_file_location)
-        
-games_with_titles_df = pd.read_csv(test_csv_file_location)
+games_with_titles_df = fetch_data_from_sql(title_and_time_control_query)
 
 """
 This function is needed for categorical data since it has no numerical value, to be understood by pandas it needs a numerical 
@@ -67,10 +66,39 @@ rendering the following plot bloated
 insignificant_value = 0.10 
 filtered_distribution_df = filter_insignificant_data(title_time_control_distribution_df, threshold=insignificant_value)
 
-plot_heatmap(
-    filtered_distribution_df,
-    title='Proportion of Time Controls by Player Title (Filtered)',
-    xlabel='Time Control',
-    ylabel='Player Title',
-    filename=heatmap_file_location
-)
+"""These are the elements/feautres used in the table"""
+bot_percentages_title = filtered_distribution_df.index
+bot_percentages_time_controls = filtered_distribution_df.iloc[0].index
+bot_percentages_percentage = filtered_distribution_df.iloc[0].values
+
+
+# Here is the representation of the data in an acceptable format
+data = []
+for i in range(len(bot_percentages_title)):
+    for j in range(len(bot_percentages_title)):
+        row = {
+            'title':  bot_percentages_title[i],
+            'time_control' : bot_percentages_time_controls[j],
+            'percentage' :  bot_percentages_percentage[j]    
+        }
+        data.append(row)
+data = pd.DataFrame(data)
+
+# ax : Axes = plot_heatmap(
+#     filtered_distribution_df,
+#     title='Proportion of Time Controls by Player Title (Filtered)',
+#     xlabel='Time Control',
+#     ylabel='Player Title',
+#     filename=heatmap_file_location
+# )
+
+"""
+Here get the heatmap metadata in json
+"""
+# json_metadata = heatmap_plot_json(ax,filtered_distribution_df)
+# try:
+#     with open(heatmap_json, 'w') as f:
+#         f.write(json_metadata)
+# except IOError as e:
+#     print(f"An error occurred while writing to the file: {e}")
+

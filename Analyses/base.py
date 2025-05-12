@@ -6,7 +6,7 @@ T_TC/title_and_time_control : Finding a relation between the title and the time 
 
 """
 
-from datetime import date
+import json
 from matplotlib.axes import Axes
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -32,7 +32,7 @@ DEFAULT_STORAGE_DIR="findings" # for admin zone
 Utiliy functions for ALL analyses (descriptions are in the function definitions)
 """
 
-def fetch_data_from_sql(query : str, db_connection_string=DB_STR_ENGINE, chunk_size=10000) -> None : 
+def fetch_data_from_sql(query : str, db_connection_string=DB_STR_ENGINE, chunk_size=10000) -> pd.DataFrame : 
     """
     Fetches data from a SQL database in chunks to handle large datasets efficiently.
 
@@ -212,6 +212,28 @@ def plot_barplot(data : pd.DataFrame, lables_list , values_list, title: str, xla
     plt.close()
     return axes_data
 
+
+"""
+This is where the counterpart functions for the JSON representation of the wrapper functions abovve will be placed
+"""
+
+def heatmap_plot_json(ax: Axes, data: pd.DataFrame) -> str :
+    heatmap_values = ax.collections[0].get_array()
+    num_rows, num_cols = data.shape
+    heatmap_grid_values = heatmap_values.reshape((num_rows, num_cols))
+    # TODO : make this general
+    heatmap_metadata = {
+        'title': ax.axes.get_title(),
+        'xlabel': ax.axes.get_xlabel(),
+        'ylabel': ax.axes.get_ylabel(),
+        'xticklabels': [label.get_text() for label in ax.axes.get_xticklabels()],
+        'yticklabels': [label.get_text() for label in ax.axes.get_yticklabels()],
+        'colorbar': {
+            'ticklabels': [label.get_text() for label in ax.figure.axes[-1].get_yticklabels()]
+        },
+        'data_values': heatmap_grid_values.tolist()
+    }
+    return json.dumps(heatmap_metadata, indent=4)
 
 """
 Other

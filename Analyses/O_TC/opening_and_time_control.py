@@ -1,5 +1,3 @@
-import json
-from os import write
 from Analyses.base import *
 
 """
@@ -9,7 +7,7 @@ storage_directory_results = set_storage_directory(DEFAULT_STORAGE_DIR, __file__)
 storage_directory_json = set_storage_directory('json', __file__)
 # files in storage directory
 heatmap_file_location = storage_directory_results + 'heatmap_opening_and_time_control.png'
-stacked_bar_chart_location = storage_directory_results + 'stacked_bar_chart_opening_and_time_control.png'
+barplot_file_location = storage_directory_results + 'barplot_opening_and_time_control.png'
 #files in json storage directory
 heatmap_plot_json_values = storage_directory_json + 'heatmap.json'
 # files in parent directory
@@ -41,7 +39,7 @@ ORDER BY
     g.time_control
 LIMIT {TEST_ROW_COUNT};"""
 
-v2 = f"""SELECT
+opening_and_time_control_query_with_count= f"""SELECT
     g.time_control,
     o.name AS opening,
     COUNT(*) AS game_count
@@ -76,13 +74,8 @@ def series_to_dataframe(series : pd.Series, labels_list : str, values_list : str
 
 ### START OF ANALYSIS ##########################################################################################################
 
-if not file_exists(test_csv_file_location):
-    fetch_sql_and_save_to_csv(query=v2, output_csv_path=test_csv_file_location)
+games_with_opening_and_time_control = fetch_data_from_sql(opening_and_time_control_query)
 
-games_with_opening_and_time_control = pd.read_csv(test_csv_file_location)
-
-print("GAMES WITH OPENING AND TIME CONTROL")
-print(games_with_opening_and_time_control.head())
 """
 Once again we are dealing with both categorical values and will have to be formatted for pandas numerically
 """
@@ -91,50 +84,34 @@ formatted_games_openings_and_time_controls = calculate_value_distribution(
     group_column='opening',
     value_column='time_control'
 )
-print("FORMATTED GAMES")
-print(formatted_games_openings_and_time_controls.head())
 
-filtered_games_and_openings : pd.DataFrame = filter_data_by_threshold(formatted_games_openings_and_time_controls, row_threshold=0.5,col_threshold=1)
-print("FILTERED GAMES")
-print(filtered_games_and_openings.head())
+filtered_games_and_openings : pd.DataFrame = filter_data_by_threshold(formatted_games_openings_and_time_controls, row_threshold=0.95,col_threshold=0/95)
 
-ax : Axes = plot_heatmap(
-    filtered_games_and_openings,
-    title='Heatmap of Opening and Time Control',
-    xlabel='Opening',
-    ylabel='Time Control',
-    filename=heatmap_file_location
-)
+time_control_occurrences : pd.Series = filtered_games_and_openings.sum(axis=0)
+used_openings : pd.Series = time_control_occurrences[time_control_occurrences != 0] # removes unsuded openings
+most_used_openings : pd.Series =  used_openings.sort_values(ascending=True)
+time_controls = most_used_openings.index.values
+opening_occurrence = most_used_openings.values
+time_control_to_opening_data = pd.DataFrame({'opening': opening_occurrence, 'time_control':time_controls})
 
-# Access the underlying data (NumPy array)
-heatmap_values = ax.collections[0].get_array()
+print(time_control_to_opening_data.head())
 
-# Reshape the 1D array from .get_array() back to the 2D grid
-num_rows, num_cols = filtered_games_and_openings.shape
-heatmap_grid_values = heatmap_values.reshape((num_rows, num_cols))
-# Store these values in the metadata
-heatmap_metadata = {
-    'title': ax.axes.get_title(),
-    'xlabel': ax.axes.get_xlabel(),
-    'ylabel': ax.axes.get_ylabel(),
-    'xticks': ax.axes.get_xticks().tolist(),
-    'xticklabels': [label.get_text() for label in ax.axes.get_xticklabels()],
-    'yticks': ax.axes.get_yticks().tolist(),
-    'yticklabels': [label.get_text() for label in ax.axes.get_yticklabels()],
-    'colorbar': {
-        'label': ax.figure.axes[-1].get_ylabel(),
-        'ticks': ax.figure.axes[-1].get_yticks().tolist(),
-        'ticklabels': [label.get_text() for label in ax.figure.axes[-1].get_yticklabels()]
-    },
-    'data_values': heatmap_grid_values.tolist() # Add the data values
-}
-# Convert to JSON
-json_metadata = json.dumps(heatmap_metadata, indent=4)
-try:
-    with open(heatmap_plot_json_values, 'w') as f:
-        f.write(json_metadata)
-except IOError as e:
-    print(f"An error occurred while writing to the file: {e}")
+
+# ax : Axes = plot_heatmap(
+#     time_control_to_opening_data,
+#     title='Heatmap of Opening and Time Control',
+#     xlabel='Opening',
+#     ylabel='Time Control',
+#     filename=heatmap_file_location
+# )
+
+
+# json_metadata = heatmap_plot_json(ax, time_control_to_opening_data)
+# try:
+#     with open(heatmap_plot_json_values, 'w') as f:
+#         f.write(json_metadata)
+# except IOError as e:
+#     print(f"An error occurred while writing to the file: {e}")
 
 """
 Here we are calculating the proportions to the grand total of each time control for each opening
@@ -143,14 +120,16 @@ We turn this finally into a dataframe containing the time control and the percen
 total_proportions_series : pd.Series = calculate_proportions_from_total(filtered_games_and_openings)
 time_control_percentages : pd.DataFrame = series_to_dataframe(total_proportions_series, 'Time Control', 'Percentage')
 time_control_percentages_nicer_format = time_control_percentages.sort_values(by='Percentage', ascending=False)
+tope_ones =  time_control_percentages_nicer_format[:3] #HARDCODED 
 
-axes_data_for_bars : Axes = plot_barplot(
-    time_control_percentages_nicer_format,
-    lables_list='Time Control',
-    values_list='Percentage',
-    title='Barplot of Time Control Percentages',
-    xlabel='Opening',
-    ylabel='Time Control',
-    filename=stacked_bar_chart_location
-)
+print(tope_ones)
+# axes_data_for_bars : Axes = plot_barplot(
+#     tope_ones,
+#     lables_list='Time Control',
+#     values_list='Percentage',
+#     title='Barplot of Time Control Percentages',
+#     xlabel='Opening',
+#     ylabel='Time Control',
+#     filename=barplot_file_location
+# )
 
