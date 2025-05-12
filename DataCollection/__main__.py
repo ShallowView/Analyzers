@@ -1,4 +1,4 @@
-from ProcessPGN import *
+from __init__ import *
 
 # INPUT FILES
 PGNFiles = ["Datasets/lichess_elite_2024-06.pgn",

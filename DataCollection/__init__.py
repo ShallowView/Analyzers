@@ -1,3 +1,9 @@
+__author__ = "agueguen_lr"
+__all__ = ["setMaxCores", "addOpeningsToDatabase", "addNewPGNtoDatabase", 
+           "insertDataToPostgres", "createOpeningsDataFrame", 
+           "createGamesDataFrame", "createPlayersDataFrame", 
+           "updatePlayersElo", "PGNtoDataFrame"]
+
 import multiprocessing
 import pandas as pd
 import psycopg
