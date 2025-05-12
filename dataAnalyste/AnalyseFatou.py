@@ -1,5 +1,6 @@
-#!/usr/bin/env python
-# coding: utf-8
+"""!/usr/bin/env python
+ coding: utf-8
+"""
 
 # In[ ]:
 
@@ -7,11 +8,14 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-#CHARGEMENT DES DONNÉES
+
+""" loading data"""
+
 df_games = pd.read_csv("lichess_elite_2020-06_games.csv")
 df_players = pd.read_csv("lichess_elite_2020-06_players.csv")
 
-# Nettoyer les noms des colonnes pour éviter les espaces
+
+"""Clean up column names to avoid spaces"""
 df_players.columns = df_players.columns.str.strip()
 
 # SELECTION DU JOUEUR (à personnaliser ici) 
@@ -305,6 +309,9 @@ games['avg_elo'] = (games['WhiteElo'] + games['BlackElo']) / 2
 
 # 4. Fonction de génération du profil joueur par nom
 def generate_player_profile_by_name(player_name):
+    """
+    cette fonction permet de generer le profil de n'importe quel joueur
+    """
     # Rechercher l'ID du joueur via PlayerName
     player_row = players[players['PlayerName'].str.lower() == player_name.lower()]
 
