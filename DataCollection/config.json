@@ -1,0 +1,10 @@
+{
+  "dbname": "postgres",
+  "user": "docker",
+  "password": "docker",
+  "host": "localhost",
+  "port": 5432,
+
+  "pgn_files_dir": "Datasets/PGN",
+  "openings_dir": "Datasets/Openings"
+}
