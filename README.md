@@ -5,7 +5,15 @@ _Soon..._
 
 ## Documentation
 ### Technician installation guide
-_Soon..._
+#### Inserting new PGN files to a postgreSQL database
+
+Create a config.json file containing the connection parameters to the postgreSQL server and the paths to the PGNFiles you wish to add. An example is present in DataCollection/
+
+Launch the module:
+``` bash
+python -m DataCollection <config_file>
+```
+
 ### Developer preparation guide
 _Soon..._
 
