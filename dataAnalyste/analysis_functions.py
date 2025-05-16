@@ -69,11 +69,11 @@ def get_win_rate_by_title(engine):
             t.title,
             COUNT(*) * 100.0 / (
                 SELECT COUNT(*) FROM all_played WHERE title = t.title
-            ) AS winrate
+            ) AS win_rate
         FROM all_titles t
         WHERE t.title IS NOT NULL
         GROUP BY t.title
-        ORDER BY winrate DESC;
+        ORDER BY win_rate DESC;
     """
     return pd.read_sql(query, engine)
 
@@ -102,7 +102,7 @@ def get_win_rate_by_color(engine):
     """
     df = pd.read_sql(query, engine)
     total = df['count'].sum()
-    df['percentage'] = df['count'] / total * 100
+    df['win_rate'] = df['count'] / total * 100
     df = df.replace({'result': {'W': 'White Wins', 'B': 'Black Wins', 'D': 'Draws'}})
     return df
 
@@ -126,11 +126,11 @@ def get_avg_elo_by_opening(engine):
     query = """
         SELECT 
             g.opening AS opening,
-            AVG((g.white_elo + g.black_elo)/2) AS average_elo
+            AVG((g.white_elo + g.black_elo)/2) AS avg_elo
         FROM games g
         WHERE g.white_elo IS NOT NULL AND g.black_elo IS NOT NULL
         GROUP BY g.opening
-        ORDER BY average_elo DESC
+        ORDER BY avg_elo DESC
         LIMIT 15;
     """
     return pd.read_sql(query, engine)
@@ -141,9 +141,9 @@ def plot_avg_elo_by_opening(df):
     # Conversion explicite en chaîne
     df['opening'] = df['opening'].astype(str)
 
-    df = df.sort_values("average_elo")
+    df = df.sort_values("avg_elo")
     plt.figure(figsize=(10, 7))
-    plt.barh(df['opening'], df['average_elo'], color='seagreen')
+    plt.barh(df['opening'], df['avg_elo'], color='seagreen')
     plt.title("Average Elo by Opening (Top 15)")
     plt.xlabel("Average Elo")
     plt.ylabel("Opening")

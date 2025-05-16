@@ -4,7 +4,18 @@ from dataAnalyste.analysis_functions import *
 from DataCollection.ProcessPGN import insertDataToPostgres
 
 
-
+# Database connection parameters
+db_params_SSL = {
+    "dbname": "shallowview",
+    "user": "Sokhnafaty09", # Replace with your database username
+    "password": "", # Replace with your database password
+    "host": "s0.net.pimous.dev",
+    "port": 31003,
+    "sslmode": "require",  # Enforce SSL connection
+    "sslcert": "C:/Users/mamef/Downloads/Sokhnafaty09.crt",  # Path to client certificate
+    "sslkey": "C:/Users/mamef/Downloads/Sokhnafaty09.key",    # Path to client private key
+    "sslrootcert": "C:/Users/mamef/Downloads/pimousdev-db.chain.crt"   # Path to CA certificate
+}
 
 # Function to create a secure connection to the database
 def get_engine(params):
@@ -52,4 +63,4 @@ if __name__ == "__main__":
     opening_df = get_avg_elo_by_opening(engine)
     #plot_avg_elo_by_opening(opening_df)
     df_opening = get_avg_elo_by_opening(engine)
-    insertDataToPostgres(db_params_SSL, 'avg_elo_by_opening', df_opening)
+    insertDataToPostgres(db_params_SSL, 'avg_elo_opening', df_opening)
