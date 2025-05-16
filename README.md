@@ -1,7 +1,7 @@
 # Analyzers [![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-orange.svg)](COPYING.LESSER)
 _Soon..._
 
-> Version: **v0.0.0**
+> Version: **v1.0.0-b.0**
 
 ## Documentation
 ### Technician installation guide
