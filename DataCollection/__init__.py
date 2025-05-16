@@ -1,10 +1,12 @@
 __author__ = "agueguen_lr"
-__all__ = ["setMaxCores", "addOpeningsToDatabase", "addNewPGNtoDatabase", 
-           "insertDataToPostgres", "createOpeningsDataFrame", 
-           "createGamesDataFrame", "createPlayersDataFrame", 
-           "updatePlayersElo", "PGNtoDataFrame"]
+__all__ = ["setMaxCores", "addOpeningsToDatabase", "addNewPGNtoDatabase",
+					 "insertDataToPostgres", "createOpeningsDataFrame",
+					 "createGamesDataFrame", "createPlayersDataFrame",
+					 "updatePlayersElo", "PGNtoDataFrame"]
 
 import multiprocessing
+from typing import Iterator
+
 import pandas as pd
 import psycopg
 import uuid
@@ -46,60 +48,38 @@ def setMaxCores(cores: int = MAX_CORES) -> None:
 		logger.warning("Invalid core count. Using default value.")
 
 
-def __process_pgn_file(file: str) -> pd.DataFrame:
+def PGNtoDataFrame(files: list[str], chunk_size : int = 250000) -> Iterator[
+	pd.DataFrame]:
 	"""
-	Process a single PGN file and return a DataFrame of games.
-	:param file: Path to the PGN file.
+	Process PGN files and yield DataFrames of games.
+	:param files: List of paths to the PGN files.
+	:param chunk_size: Number of games to output per Dataframe.
 	:return: DataFrame containing games from the PGN file.
 	"""
 	try:
 		games = []
 		dic = {}
-		with open(file, "r") as f:
-			for line in f:
-				if line.startswith("["):
-					try:
-						header, value = line[1:-2].split(" ", 1)
-						dic[header] = value.strip('"')
-					except ValueError as e:
-						logger.error(f"Error parsing header line: {line.strip()} - {e}")
-				elif line.startswith("1") and dic:
-					games.append(dic)
-					dic = {}
-		return pd.DataFrame(games)
+		for file in files:
+			with open(file, "r") as f:
+				for line in f:
+					if line.startswith("["):
+						try:
+							header, value = line[1:-2].split(" ", 1)
+							dic[header] = value.strip('"')
+						except ValueError as e:
+							logger.error(f"Error parsing header line: {line.strip()} - {e}")
+					elif line.startswith("1") and dic:
+						games.append(dic)
+						dic = {}
+					if len(games) >= chunk_size:
+						yield pd.DataFrame(games)
+						games = []
+			yield pd.DataFrame(games)
 	except FileNotFoundError as e:
-		logger.error(f"File not found: {file} - {e}")
-		return pd.DataFrame()
+		logger.error(f"File not found")
 	except Exception as e:
-		logger.error(f"Unexpected error while processing PGN file {file}: {e}")
-		return pd.DataFrame()
-
-
-def PGNtoDataFrame(files: list[str]) -> pd.DataFrame:
-	"""
-	Convert a PGN file to a DataFrame.
-	:param: files: list of paths to the PGN files.
-	:return: DataFrame containing raw PGN information.
-	"""
-	if not files:
-		logger.warning("No PGN files provided. Returning an empty DataFrame.")
-		return pd.DataFrame()
-
-	try:
-		# Process files in parallel
-		with ProcessPoolExecutor(max_workers=MAX_CORES) as executor:
-			allGames = list(
-				tqdm(executor.map(__process_pgn_file, files), total=len(files),
-						 desc="Processing pgn files"))
-
-		gameInfo = pd.concat(allGames, ignore_index=True)
-		logger.info(f"Total games processed: {len(gameInfo)}")
-		return gameInfo
-
-	except Exception as e:
-		logger.error(f"Unexpected error while processing PGN files: {e}")
-		return pd.DataFrame()
-
+		logger.error(f"Unexpected error while processing PGN file")
+	return None
 
 def __process_players_chunk(
 		chunk: pd.DataFrame,
@@ -315,8 +295,8 @@ def __insert_chunk_to_postgres(chunk: pd.DataFrame, table_name: str) -> None:
 		with global_connection.cursor() as cursor:
 			# Prepare the insert query
 			insert_query = psycopg.sql.SQL(
-				"INSERT INTO {table} ({columns}) VALUES ({values}) ON CONFLICT DO "
-				"NOTHING"
+				"insert into {table} ({columns}) values ({values}) on conflict do "
+				"nothing"
 			).format(
 				table=psycopg.sql.Identifier(table_name),
 				columns=psycopg.sql.SQL(", ").join(
@@ -398,44 +378,43 @@ def addNewPGNtoDatabase(
 		openings_table = table_names.get("openings", "openings")
 		games_table = table_names.get("games", "games")
 
-		# Read PGN files and convert to DataFrame
-		rawPGN = PGNtoDataFrame(PGNFiles)
+		for rawPGN in PGNtoDataFrame(PGNFiles):
 
-		# Connect to the database
-		with psycopg.connect(**db_params) as connection:
-			# Get current existing players in the database
-			with connection.cursor() as cursor:
-				query = psycopg.sql.SQL("SELECT id, name FROM {player_table}").format(
-					player_table=psycopg.sql.Identifier(players_table)
-				)
-				players_data = cursor.execute(query).fetchall()
-				DBplayers = pd.DataFrame(players_data, columns=["id", "name"])
+			# Connect to the database
+			with psycopg.connect(**db_params) as connection:
+				# Get current existing players in the database
+				with connection.cursor() as cursor:
+					query = psycopg.sql.SQL("select id, name from {player_table}").format(
+						player_table=psycopg.sql.Identifier(players_table)
+					)
+					players_data = cursor.execute(query).fetchall()
+					DBplayers = pd.DataFrame(players_data, columns=["id", "name"])
 
-			# Create DataFrame for new players and insert into PostgreSQL
-			players = createPlayersDataFrame(rawPGN, DBplayers)
-			insertDataToPostgres(db_params, players_table, players)
+				# Create DataFrame for new players and insert into PostgreSQL
+				players = createPlayersDataFrame(rawPGN, DBplayers)
+				insertDataToPostgres(db_params, players_table, players)
 
-			# Get updated player and opening data from the database
-			with connection.cursor() as cursor:
-				query = psycopg.sql.SQL("SELECT id, name FROM {player_table}").format(
-					player_table=psycopg.sql.Identifier(players_table)
-				)
-				players_data = cursor.execute(query).fetchall()
-				players = pd.DataFrame(players_data, columns=["id", "name"])
+				# Get updated player and opening data from the database
+				with connection.cursor() as cursor:
+					query = psycopg.sql.SQL("SELECT id, name FROM {player_table}").format(
+						player_table=psycopg.sql.Identifier(players_table)
+					)
+					players_data = cursor.execute(query).fetchall()
+					players = pd.DataFrame(players_data, columns=["id", "name"])
 
-				query = psycopg.sql.SQL(
-					"SELECT id, name, pgn FROM {opening_table}").format(
-					opening_table=psycopg.sql.Identifier(openings_table)
-				)
-				openings_data = cursor.execute(query).fetchall()
-				openings = pd.DataFrame(openings_data, columns=["id", "name", "pgn"])
+					query = psycopg.sql.SQL(
+						"SELECT id, name, pgn FROM {opening_table}").format(
+						opening_table=psycopg.sql.Identifier(openings_table)
+					)
+					openings_data = cursor.execute(query).fetchall()
+					openings = pd.DataFrame(openings_data, columns=["id", "name", "pgn"])
 
-			# Create the games DataFrame and insert into PostgreSQL
-			games = createGamesDataFrame(rawPGN, players, openings)
-			insertDataToPostgres(db_params, games_table, games)
+				# Create the games DataFrame and insert into PostgreSQL
+				games = createGamesDataFrame(rawPGN, players, openings)
+				insertDataToPostgres(db_params, games_table, games)
 
 			# Update players' ELO columns in the database
-			updatePlayersElo(db_params)
+		updatePlayersElo(db_params)
 
 		logger.info("PGN files successfully added to the database.")
 
