@@ -15,9 +15,7 @@ pip-selfcheck.json
 *.csv
 *.tsv
 *.pgn
-*.json
 
 .vscode
 .idea
-.env
 __pycache__/

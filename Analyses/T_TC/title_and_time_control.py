@@ -72,25 +72,28 @@ bot_percentages_time_controls = filtered_distribution_df.iloc[0].index
 bot_percentages_percentage = filtered_distribution_df.iloc[0].values
 
 
-# Here is the representation of the data in an acceptable format
-data = []
-for i in range(len(bot_percentages_title)):
-    for j in range(len(bot_percentages_title)):
-        row = {
-            'title':  bot_percentages_title[i],
-            'time_control' : bot_percentages_time_controls[j],
-            'percentage' :  bot_percentages_percentage[j]    
-        }
-        data.append(row)
-data = pd.DataFrame(data)
+# # Here is the representation of the data in an acceptable format
+# data = []
+# for i in range(len(bot_percentages_title)):
+#     for j in range(len(bot_percentages_title)):
+#         row = {
+#             'title':  bot_percentages_title[i],
+#             'time_control' : bot_percentages_time_controls[j],
+#             'percentage' :  bot_percentages_percentage[j]    
+#         }
+#         data.append(row)
+# data = pd.DataFrame(data)
 
-# ax : Axes = plot_heatmap(
-#     filtered_distribution_df,
-#     title='Proportion of Time Controls by Player Title (Filtered)',
-#     xlabel='Time Control',
-#     ylabel='Player Title',
-#     filename=heatmap_file_location
-# )
+ax : Axes = plot_heatmap(
+    filtered_distribution_df,
+    title='Proportion of Time Controls by Player Title (Filtered)',
+    xlabel='Time Control',
+    ylabel='Player Title',
+    filename=heatmap_file_location
+)
+
+plotly_fig = tools.mpl_to_plotly(ax.get_figure())
+print(plotly_fig)    
 
 """
 Here get the heatmap metadata in json

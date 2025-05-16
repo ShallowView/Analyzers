@@ -28,6 +28,7 @@ Speculation             :
 opening_and_time_control_query = f"""SELECT
     g.time_control,
     o.name AS opening
+    
 FROM
     games g
 JOIN
@@ -92,18 +93,17 @@ used_openings : pd.Series = time_control_occurrences[time_control_occurrences !=
 most_used_openings : pd.Series =  used_openings.sort_values(ascending=True)
 time_controls = most_used_openings.index.values
 opening_occurrence = most_used_openings.values
-time_control_to_opening_data = pd.DataFrame({'opening': opening_occurrence, 'time_control':time_controls})
+time_control_to_opening_data = pd.DataFrame({'opening': opening_occurrence}, index=time_controls)
 
-print(time_control_to_opening_data.head())
+ax : Axes = plot_heatmap(
+    time_control_to_opening_data,
+    title='Heatmap of Opening and Time Control',
+    xlabel='Opening',
+    ylabel='Time Control',
+    filename=heatmap_file_location
+)
 
 
-# ax : Axes = plot_heatmap(
-#     time_control_to_opening_data,
-#     title='Heatmap of Opening and Time Control',
-#     xlabel='Opening',
-#     ylabel='Time Control',
-#     filename=heatmap_file_location
-# )
 
 
 # json_metadata = heatmap_plot_json(ax, time_control_to_opening_data)
@@ -122,14 +122,13 @@ time_control_percentages : pd.DataFrame = series_to_dataframe(total_proportions_
 time_control_percentages_nicer_format = time_control_percentages.sort_values(by='Percentage', ascending=False)
 tope_ones =  time_control_percentages_nicer_format[:3] #HARDCODED 
 
-print(tope_ones)
-# axes_data_for_bars : Axes = plot_barplot(
-#     tope_ones,
-#     lables_list='Time Control',
-#     values_list='Percentage',
-#     title='Barplot of Time Control Percentages',
-#     xlabel='Opening',
-#     ylabel='Time Control',
-#     filename=barplot_file_location
-# )
+axes_data_for_bars : Axes = plot_barplot(
+    tope_ones,
+    lables_list='Time Control',
+    values_list='Percentage',
+    title='Barplot of Time Control Percentages',
+    xlabel='Opening',
+    ylabel='Time Control',
+    filename=barplot_file_location
+)
 

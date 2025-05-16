@@ -6,8 +6,12 @@ T_TC/title_and_time_control : Finding a relation between the title and the time 
 
 """
 
+import array
+from ast import List
 import json
 from matplotlib.axes import Axes
+from numpy import ndarray
+import  plotly.tools as tools
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -23,8 +27,7 @@ TEST_ROW_COUNT      -> number of rows to query the database while testing
 DEFAULT_STORAGE_DIR -> name of directory in every package that contains plots/findings of the analysis in question
 """
 load_dotenv()
-DB_STR : str = os.getenv("DB_STR")
-DB_STR_ENGINE : str = "postgresql://Ryan%20Heuvel@s0.net.pimous.dev:31003/shallowview?sslmode=require&sslcert=%2Fhome%2Fryanator%2F.ssl%2Fryan-heuvel.crt&sslkey=%2Fhome%2Fryanator%2F.ssl%2Fryan-heuvel.key&sslrootcert=%2Fhome%2Fryanator%2F.ssl%2Fpimousdev-db.chain.crt"
+DB_STR_ENGINE : str = ""
 TEST_ROW_COUNT : int = 10000 # for testing purposes, don't need to query entire database
 DEFAULT_STORAGE_DIR="findings" # for admin zone
 
@@ -212,28 +215,30 @@ def plot_barplot(data : pd.DataFrame, lables_list , values_list, title: str, xla
     plt.close()
     return axes_data
 
+def plot_scatter_biplot(title : str, row_coordinates : pd.DataFrame, columns_coordinates : pd.DataFrame, x_label : str = 'Component 1', y_label : str = 'Component 2', annotations = False, filepath :str  = "scatterplott_MCA_biplot.png"): 
+    """
+    
+    """
+    # need to process the row andd columns from the mca object after analysis
+    row_coordinates.rename(columns={0: x_label, 1: y_label}, inplace=True)
+    columns_coordinates.rename(columns={0: x_label, 1: y_label}, inplace=True)
+    
+    plottyman = plt.figure(figsize=(10, 10))
+    sns.scatterplot(x=x_label, y=y_label, data=row_coordinates, label='Rows')
+    sns.scatterplot(x=x_label, y=y_label, data=columns_coordinates, marker='^', color='red', label='Columns')
+    if annotations:
+        for i, row in columns_coordinates.iterrows():
+            plt.annotate(row['index'], (row[x_label], row[y_label]), textcoords="offset points", xytext=(5,5), ha='left')
+    plt.title(title)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.legend()
+    plt.grid(True)
+    plottyman.savefig(filepath)
 
 """
 This is where the counterpart functions for the JSON representation of the wrapper functions abovve will be placed
 """
-
-def heatmap_plot_json(ax: Axes, data: pd.DataFrame) -> str :
-    heatmap_values = ax.collections[0].get_array()
-    num_rows, num_cols = data.shape
-    heatmap_grid_values = heatmap_values.reshape((num_rows, num_cols))
-    # TODO : make this general
-    heatmap_metadata = {
-        'title': ax.axes.get_title(),
-        'xlabel': ax.axes.get_xlabel(),
-        'ylabel': ax.axes.get_ylabel(),
-        'xticklabels': [label.get_text() for label in ax.axes.get_xticklabels()],
-        'yticklabels': [label.get_text() for label in ax.axes.get_yticklabels()],
-        'colorbar': {
-            'ticklabels': [label.get_text() for label in ax.figure.axes[-1].get_yticklabels()]
-        },
-        'data_values': heatmap_grid_values.tolist()
-    }
-    return json.dumps(heatmap_metadata, indent=4)
 
 """
 Other
