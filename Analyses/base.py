@@ -27,7 +27,7 @@ TEST_ROW_COUNT      -> number of rows to query the database while testing
 DEFAULT_STORAGE_DIR -> name of directory in every package that contains plots/findings of the analysis in question
 """
 load_dotenv()
-DB_STR_ENGINE : str = ""
+DB_STR_ENGINE : str = "postgresql://Ryan%20Heuvel@s0.net.pimous.dev:31003/shallowview?sslmode=require&sslcert=%2Fhome%2Fryanator%2F.ssl%2Fryan-heuvel.crt&sslkey=%2Fhome%2Fryanator%2F.ssl%2Fryan-heuvel.key&sslrootcert=%2Fhome%2Fryanator%2F.ssl%2Fpimousdev-db.chain.crt"
 TEST_ROW_COUNT : int = 10000 # for testing purposes, don't need to query entire database
 DEFAULT_STORAGE_DIR="findings" # for admin zone
 
