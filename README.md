@@ -1,11 +1,19 @@
 # Analyzers [![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-orange.svg)](COPYING.LESSER)
 _Soon..._
 
-> Version: **v0.0.0**
+> Version: **v1.0.0-b.0**
 
 ## Documentation
 ### Technician installation guide
-_Soon..._
+#### Inserting new PGN files to a postgreSQL database
+
+Create a config.json file containing the connection parameters to the postgreSQL server and the paths to the PGNFiles you wish to add. An example is present in DataCollection/
+
+Launch the module:
+``` bash
+python -m DataCollection <config_file>
+```
+
 ### Developer preparation guide
 _Soon..._
 
