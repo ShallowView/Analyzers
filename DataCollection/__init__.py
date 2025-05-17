@@ -1,4 +1,4 @@
-__author__ = "agueguen_lr"
+__author__ = "agueguen-lr"
 __all__ = ["setMaxCores", "addOpeningsToDatabase", "addNewPGNtoDatabase",
 					 "insertDataToPostgres", "createOpeningsDataFrame",
 					 "createGamesDataFrame", "createPlayersDataFrame",
@@ -48,7 +48,7 @@ def setMaxCores(cores: int = MAX_CORES) -> None:
 		logger.warning("Invalid core count. Using default value.")
 
 
-def PGNtoDataFrame(files: list[str], chunk_size : int = 250000) -> Iterator[
+def PGNtoDataFrame(files: list[str], chunk_size : int = 500000) -> Iterator[
 	pd.DataFrame]:
 	"""
 	Process PGN files and yield DataFrames of games.
