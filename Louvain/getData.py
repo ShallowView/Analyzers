@@ -20,6 +20,8 @@ def getPlayersOpenings(
 
 	:param connection_params: Dictionary containing database connection parameters.
 	:param color: The color to filter by ('white' or 'black').
+	:param min_games: Minimum number of games played by a player to be included.
+	:param min_percent: Minimum percentage of games played with an opening to be included.
 	:return: DataFrame containing player-opening data.
 	"""
 	
@@ -86,7 +88,7 @@ def getNetworkGraph(data: pd.DataFrame) -> nx.Graph:
 	# Add edges between players and openings with weights (percentages)
 	for _, row in data.iterrows():
 		B.add_edge(row["player_name"], row["opening_name"],
-							 weight=row["percentage_played"])
+							 weight=float(row["percentage_played"]))
 
 	__add_opening_edges(B, data)
 
@@ -116,4 +118,4 @@ def __add_opening_edges(graph: nx.Graph, data: pd.DataFrame) -> None:
 				graph.add_node(prefix, bipartite=1, type="opening")
 				opening_set.add(prefix)  # Update the set
 			# Add the edge between the opening and the prefix
-			graph.add_edge(opening, prefix, weight=1)
+			graph.add_edge(opening, prefix, weight=1.)
