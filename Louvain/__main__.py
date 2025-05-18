@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from json import load
 import logging
 
-from JSON_handling import validate_and_extract_params
+from DataCollection import validate_and_extract_params
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO,
@@ -40,7 +40,7 @@ if __name__ == "__main__":
 	data = getPlayersOpenings(db_params, plot_params["color"], plot_params.get(
 		"min_games", 50), plot_params.get("min_percent", 0.05))
 
-	logger.info("Displaying fetched data: \n")
+	logger.info("Displaying fetched data:")
 	print(data)
 
 	graph = getNetworkGraph(data)
