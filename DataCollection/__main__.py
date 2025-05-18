@@ -1,7 +1,6 @@
 import os
 import sys
 
-from JSON_handling import validate_and_extract_params
 from __init__ import *
 from json import load
 
