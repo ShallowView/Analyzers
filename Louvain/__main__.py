@@ -1,11 +1,18 @@
-import JSON_handling
+from community import community_louvain
+
 from __init__ import *
 import sys
 import os
 import matplotlib.pyplot as plt
 from json import load
+import logging
 
 from JSON_handling import validate_and_extract_params
+
+# Initialize logging
+logging.basicConfig(level=logging.INFO,
+										format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
 
@@ -23,20 +30,26 @@ if __name__ == "__main__":
 	optional_db_keys = ["password", "sslmode", "sslkey", "sslcert", "sslrootcert"]
 	db_params = validate_and_extract_params(all_params, required_db_keys, optional_db_keys)
 	
-	if all_params.get("color") not in ["white", "black"]:
-			raise ValueError("Please provide a valid color (white or black)")
-
-	if all_params.get("layout") not in ["spring", "kamada"]:
-		raise ValueError("Please provide a valid layout (spring or kamada)")
+	required_db_keys = ["layout", "color"]
+	optional_db_keys = ["louvain", "min_games", "min_percent"]
+	plot_params = validate_and_extract_params(all_params, required_db_keys,
+																				 optional_db_keys)
 			
-	data = getPlayersOpenings(db_params, all_params["color"], 50, 0.05)
+	data = getPlayersOpenings(db_params, plot_params["color"], plot_params.get(
+		"min_games", 50), plot_params.get("min_percent", 0.05))
+
+	logger.info("Displaying fetched data: \n")
 	print(data)
 
 	graph = getNetworkGraph(data)
 
-	if all_params.get("layout") == "kamada":
-		plotKamadaKawai(graph, show_edge_labels=False)
-	if all_params.get("layout") == "spring":
-		plotSpringLayout(graph, show_edge_labels=False)
+	if plot_params.get("louvain"):
+		partitions = community_louvain.best_partition(graph)
+		plotLouvainPartitions(graph, partitions, layout=plot_params["layout"])
+	else:
+		if plot_params.get("layout") == "kamada":
+			plotKamadaKawai(graph, show_edge_labels=False)
+		if plot_params.get("layout") == "spring":
+			plotSpringLayout(graph, show_edge_labels=False)
 
 	plt.show()
