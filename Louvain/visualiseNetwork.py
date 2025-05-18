@@ -1,19 +1,27 @@
 import networkx as nx
 import matplotlib.pyplot as plt
+import json
+import logging
+
+# Initialize logging
+logging.basicConfig(level=logging.INFO,
+										format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 
-def plotKamadaKawai(
-		graph: nx.Graph, show_edge_labels: bool = True,
+def plotBasic(
+		graph: nx.Graph, pos: any, show_edge_labels: bool = True,
 		figure_size: tuple = (60, 50), node_sizes: tuple = (500, 300)
 ) -> None:
 	"""
 	Plots the graph using the Kamada-Kawai layout.
 	:param graph: The bipartite graph to be plotted.
+	:param pos: The positions of the nodes in the graph.
 	:param show_edge_labels: Whether to display edge labels (weights).
 	:param figure_size: Size of the figure (width, height).
 	:param node_sizes: Sizes of the nodes (opening, player).
 	"""
-	pos = nx.kamada_kawai_layout(graph)
+	# pos = nx.kamada_kawai_layout(graph)
 	colors = ["lightblue" if graph.nodes[node]["type"] == "player" else "green"
 						for
 						node in
@@ -35,65 +43,29 @@ def plotKamadaKawai(
 		edge_labels = nx.get_edge_attributes(graph, "weight")
 		nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels,
 																 font_size=5)
-
-
-def plotSpringLayout(
-		graph: nx.Graph, iterations: int = 50, show_edge_labels: bool = True,
-		figure_size: tuple = (60, 50), node_sizes: tuple = (500, 300)
-) -> None:
-	"""
-	Plots the graph using the Kamada-Kawai layout.
-	:param graph: The bipartite graph to be plotted.
-	:param show_edge_labels: Whether to display edge labels (weights).
-	:param figure_size: Size of the figure (width, height).
-	:param node_sizes: Sizes of the nodes (opening, player).
-	"""
-	pos = nx.spring_layout(graph, iterations=iterations)
-	colors = ["lightblue" if graph.nodes[node]["type"] == "player" else "green"
-						for
-						node in
-						graph.nodes]
-
-	plt.figure(figsize=figure_size)
-	nx.draw(
-		graph, pos, with_labels=True, node_color=colors, edge_color="gray",
-		node_size=[
-			node_sizes[0] if graph.nodes[node]["type"] == "opening" else node_sizes[1]
-			for node
-			in graph.nodes],
-		font_size=6, font_color="black", font_weight="bold",
-		alpha=0.8
-	)
-
-	# Optionally, hide edge labels if too cluttered
-	if show_edge_labels:
-		edge_labels = nx.get_edge_attributes(graph, "weight")
-		nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels,
-																 font_size=5)
-
 
 def plotLouvainPartitions(
-		graph: nx.Graph, partition: any, show_edge_labels: bool = False,
+		graph: nx.Graph, pos: any, partition: any, show_edge_labels: bool = False,
 		figure_size: tuple = (80, 65), layout: str = "spring",
 		node_sizes: tuple = (500, 300)
-		) -> any:
+) -> any:
 	"""
 	Plots the graph with nodes colored based on Louvain partitions and separates
 	players from openings using different shapes.
 	:param graph: The graph to be plotted.
+	:param pos: The positions of the nodes in the graph.
 	:param partition: Louvain partitioning of the graph.
 	:param show_edge_labels: Whether to display edge labels (weights).
 	:param figure_size: Size of the figure (width, height).
 	:param layout: Layout type ('kamada' or 'spring').
 	:param node_sizes: Sizes of the nodes (opening, player).
 	"""
+	logger.info("Plotting graph with Louvain partitions...")
 
 	# Assign colors to nodes based on their community
 	unique_communities = set(partition.values())
 	community_colors = {community: plt.cm.tab20(i / len(unique_communities))
 											for i, community in enumerate(unique_communities)}
-
-	# node_colors = [community_colors[partition[node]] for node in graph.nodes]
 
 	players = [node for node in graph.nodes if
 						 graph.nodes[node]["type"] == "player"]
@@ -136,4 +108,47 @@ def plotLouvainPartitions(
 	plt.axis("off")
 	plt.tight_layout()
 
+	logger.info("Graph plotted with Louvain partitions.")
+
 	return partition
+
+
+def exportPlotToJSON(
+		graph: nx.Graph, pos: any, output_file: str, partitions: dict = None
+		) -> None:
+	"""
+	Exports the graph plot metadata to a JSON file.
+	:param graph: The graph to be exported.
+	:param pos: The positions of the nodes in the graph.
+	:param partitions: Louvain partitions of the graph.
+	:param layout: The layout used for the graph (e.g., "spring", "kamada").
+	:param output_file: Path to the output JSON file.
+	"""
+	logger.info("Exporting plot metadata to JSON file...")
+
+	# Prepare metadata
+	metadata = {
+		"nodes": [
+			{
+				"id": node,
+				"type": graph.nodes[node].get("type", "unknown"),
+				"position": {"x": pos[node][0], "y": pos[node][1]},
+				"community": partitions[node] if partitions else None
+			}
+			for node in graph.nodes
+		],
+		"edges": [
+			{
+				"source": u,
+				"target": v,
+				"weight": graph[u][v].get("weight", 1.0)
+			}
+			for u, v in graph.edges
+		]
+	}
+
+	# Write metadata to JSON
+	with open(output_file, "w") as json_file:
+		json.dump(metadata, json_file, indent=4)
+
+	logger.info(f"Plot metadata exported to {output_file}")
