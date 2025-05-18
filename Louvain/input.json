@@ -9,5 +9,7 @@
   "layout": "spring",
   "louvain": "True",
   "min_games": 50,
-  "min_percent": 0.05
+  "min_percent": 0.05,
+  "iterations": 50,
+  "output_dir": "Louvain/"
 }
