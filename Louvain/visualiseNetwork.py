@@ -2,6 +2,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import json
 import logging
+from getData import getPartitionSummary
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO,
@@ -125,9 +126,15 @@ def exportPlotToJSON(
 	:param output_file: Path to the output JSON file.
 	"""
 	logger.info("Exporting plot metadata to JSON file...")
+	
+	if partitions is not None:
+		summary = getPartitionSummary(graph, partitions)
 
 	# Prepare metadata
 	metadata = {
+		"partitions":[
+			getPartitionSummary(graph, partitions) if partitions else [{}]
+		],
 		"nodes": [
 			{
 				"id": node,
