@@ -6,5 +6,8 @@
   "port": 5432,
   
   "color": "white",
-  "layout": "spring"
+  "layout": "spring",
+  "louvain": "True",
+  "min_games": 50,
+  "min_percent": 0.05
 }
