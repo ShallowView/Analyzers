@@ -4,6 +4,7 @@ import networkx as nx
 import psycopg
 import pandas as pd
 from psycopg.sql import SQL, Identifier
+from collections import Counter, defaultdict
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO,
@@ -40,6 +41,7 @@ def getPlayersOpenings(
                                                         JOIN public.games g ON p.id = g.{color}
                                                GROUP BY p.id)
                          SELECT p.name   AS player_name,
+														 		p.max_elo AS player_elo,
                                 o.name   AS opening_name,
                                 COUNT(*) AS times_played,
                                 ROUND((COUNT(*)::decimal / pg.total_games),
@@ -49,7 +51,7 @@ def getPlayersOpenings(
                     JOIN public.openings o
                          ON o.id = g.opening
                              JOIN player_games pg ON p.id = pg.player_id
-                         GROUP BY p.name, o.name, pg.total_games
+                         GROUP BY p.name, p.max_elo, o.name, pg.total_games
                          HAVING COUNT(*) >= {min_count}
                             AND (COUNT(*)::decimal / pg.total_games) >= {min_percent}
 												 """).format(color=Identifier(color),
@@ -78,8 +80,11 @@ def getNetworkGraph(data: pd.DataFrame) -> nx.Graph:
 	B = nx.Graph()
 
 	# Add player nodes
-	players = data["player_name"].unique()
-	B.add_nodes_from(players, bipartite=0, type="player")
+	players = data[["player_name", "player_elo"]].drop_duplicates()
+	B.add_nodes_from(
+			(row["player_name"], {"bipartite": 0, "type": "player", "elo": row["player_elo"]})
+			for _, row in players.iterrows()
+	)
 
 	# Add opening nodes
 	openings = data["opening_name"].unique()
@@ -119,3 +124,44 @@ def __add_opening_edges(graph: nx.Graph, data: pd.DataFrame) -> None:
 				opening_set.add(prefix)  # Update the set
 			# Add the edge between the opening and the prefix
 			graph.add_edge(opening, prefix, weight=1.)
+
+
+def getPartitionSummary(graph: nx.Graph, partition: dict) -> list[dict]:
+	"""
+	Create a dictionary where the key is the most prominent opening in a partition,
+	and the value is the number of elements in the partition.
+
+	:param graph: The graph containing node attributes.
+	:param partition: A dictionary mapping nodes to their partition.
+	:return: A dictionary with the most prominent opening as the key and the partition size as the value.
+	"""
+	# Group nodes by partition
+	partition_groups = defaultdict(list)
+	for node, community in partition.items():
+		partition_groups[community].append(node)
+
+	partition_summary = []
+	for community, nodes in partition_groups.items():
+		
+		openings_main = [str(node).split(':')[0] for node in nodes if
+										 graph.nodes[node]["type"] == "opening"]
+		openings_var = [node for node in nodes if
+										graph.nodes[node]["type"] == "opening"]
+		elos = [graph.nodes[node]["elo"] for node in nodes if
+					 graph.nodes[node]["type"] == "player"]
+		players = [node for node in nodes if graph.nodes[node]["type"] == "player"]
+
+		most_prominent_opening = (
+			Counter(openings_main).most_common(1)[0][0] if openings_main else None
+		)
+		partition_summary.append({
+			"id": community,
+			"main_opening": most_prominent_opening,
+			"player_count": len(players) if players else 0,
+			"players": players,
+			"variation_count": len(openings_var) if openings_main else None,
+			"variations": openings_var,
+			"average_max_elo": round(sum(elos) / len(players), 1) if players else None
+		})
+	
+	return partition_summary
