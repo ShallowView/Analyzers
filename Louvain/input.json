@@ -5,12 +5,5 @@
   "host": "localhost",
   "port": 5432,
   
-  "color": "white",
-  "layout": "spring",
-  "output_dir": "Louvain/",
-
-  "louvain": "True",
-  "min_games": 50,
-  "min_percent": 0.05,
-  "iterations": 50
+  "output": "Louvain/output.json"
 }
