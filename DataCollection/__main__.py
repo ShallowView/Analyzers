@@ -1,7 +1,7 @@
 import os
 import sys
 
-from __init__ import *
+from DataCollection import *
 from json import load
 
 # Names of the tables in the database
