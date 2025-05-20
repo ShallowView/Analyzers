@@ -5,14 +5,14 @@ from __init__ import *
 # Database connection parameters
 db_params_SSL = {
     "dbname": "shallowview",
-    "user": "Sokhnafaty09", # Replace with your database username
+    "user": "user", # Replace with your database username
     "password": "", # Replace with your database password
     "host": "s0.net.pimous.dev",
     "port": 31003,
     "sslmode": "require",  # Enforce SSL connection
-    "sslcert": "C:/Users/mamef/Downloads/Sokhnafaty09.crt",  # Path to client certificate
-    "sslkey": "C:/Users/mamef/Downloads/Sokhnafaty09.key",    # Path to client private key
-    "sslrootcert": "C:/Users/mamef/Downloads/pimousdev-db.chain.crt"   # Path to CA certificate
+    "sslcert": ".crt",  # Path to client certificate
+    "sslkey": ".key",    # Path to client private key
+    "sslrootcert": ".chain.crt"   # Path to CA certificate
 }
 
 
@@ -26,16 +26,12 @@ if __name__ == "__main__":
 
     print("Running win rate by title analysis...")
     title_df = get_win_rate_by_title(engine)
-    plot_win_rate_by_title(title_df)
-
+    plot_win_rate_by_title_json(title_df)
 
     print("Running win rate by color analysis...")
     color_df = get_win_rate_by_color(engine)
-    plot_win_rate_by_color(color_df)
-
+    plot_win_rate_by_color_json(color_df)
 
     print("Running average Elo by opening analysis...")
     opening_df = get_avg_elo_by_opening(engine)
-    plot_avg_elo_by_opening(opening_df)
-
-
+    plot_avg_elo_by_opening_json(opening_df)
