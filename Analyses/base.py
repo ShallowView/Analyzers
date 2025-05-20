@@ -1,4 +1,13 @@
+from matplotlib.axes import Axes 
+from matplotlib.figure import Figure
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sqlalchemy import create_engine
+import os
+from dotenv import load_dotenv
 
+from Analyses.__main__ import OUTPUT_DIR
 """
 Analyses -> format = <directory_acronym>/<elements_in_acronym> : <explanation>
 
@@ -6,18 +15,7 @@ T_TC/title_and_time_control : Finding a relation between the title and the time 
 
 """
 
-import array
-from ast import List
-import json
-from matplotlib.axes import Axes
-from numpy import ndarray
-import  plotly.tools as tools
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sqlalchemy import create_engine
-import os
-from dotenv import load_dotenv
+
 
 """
 CONSTANTS
@@ -138,6 +136,14 @@ def filter_data_by_threshold(df: pd.DataFrame, row_threshold=None, col_threshold
     return filtered_df
 
 
+# 
+def store_analysis_file(analysis_name : str, analysis_file_content : Figure | None):
+    if analysis_file_content is None:
+        print("Analysis content is empty")
+        return
+    with open(__file__ + '../' + OUTPUT_DIR + analysis_name + '.json', "w") as file:
+        file.write(str(analysis_file_content))
+        
 """
 Admin configuration functions
 """
@@ -159,7 +165,7 @@ def set_storage_directory(storage_directory_name: str, magic_file_attribute) -> 
 """
 This is where wrapper functions for plots are to be placed
 """
-
+# DOESN'T SAVE FIG ANYMORE
 def plot_heatmap(df : pd.DataFrame, title : str, xlabel  : str, ylabel : str, filename="heatus_mapus.png", annot=True, cmap='viridis', fmt=".2f", figsize=(10, 8)) -> Axes:
     """
     Generates and saves a heatmap plot from a DataFrame.
@@ -181,7 +187,6 @@ def plot_heatmap(df : pd.DataFrame, title : str, xlabel  : str, ylabel : str, fi
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.tight_layout()
-    plt.savefig(filename)
     plt.close()
     return axes_data
 
@@ -211,7 +216,6 @@ def plot_barplot(data : pd.DataFrame, lables_list , values_list, title: str, xla
     plt.ylabel(ylabel)
     plt.xticks(rotation=rotation, ha=ha)
     plt.tight_layout()
-    plt.savefig(filename)
     plt.close()
     return axes_data
 

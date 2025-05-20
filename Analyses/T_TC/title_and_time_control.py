@@ -1,3 +1,4 @@
+from plotly import tools
 from Analyses.base import *
 
 """

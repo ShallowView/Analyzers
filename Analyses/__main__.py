@@ -1,13 +1,10 @@
-from json import load
-import os
-import sys
+from Analyses.O_TC.opening_and_time_control import * 
+from Analyses.registry import *
+from Analyses.base import * 
+import json
 
-"""
-DESCRIPTION
-
-This is the entry point of the application, the usage is : <interpreter_command> <input_json_path> <output_json_path>
-"""
-
+OUTPUT_DIR = 'json'
 if __name__ == "__main__":
-    # read json file and o certain analiys -> getting from these speciifc plots if needed
-    print("Hello world")
+    O_TC_analysis(["O_TC_heatmap", "O_TC_barplot"])
+    
+    
