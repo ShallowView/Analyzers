@@ -1,12 +1,13 @@
+import sys
+import argparse
+import os
+from json import load
+import logging
+
 import networkx as nx
 from community import community_louvain
 
-from __init__ import *
-import sys
-import os
-import matplotlib.pyplot as plt
-from json import load
-import logging
+from Louvain import *
 
 from DataCollection import validate_and_extract_params
 
@@ -17,14 +18,34 @@ logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
 
-	arg = sys.argv[1]
-	if not arg:
-		raise ValueError("Please provide a JSON file path as an argument.")
+	# Set up argument parser
+	parser = argparse.ArgumentParser(description="Process input parameters for the Louvain algorithm.")
+	parser.add_argument("-c", "--color", help="Color parameter (required).")
+	parser.add_argument("-l", "--layout", help="Layout parameter (required).")
+	parser.add_argument("json_file", help="Path to the JSON file (required).")
+	parser.add_argument("--min_count", type=int, help="Minimum count (optional).")
+	parser.add_argument("--min_percent", type=float, help="Minimum percentage (optional).")
+	parser.add_argument("--Louvain", type=str, choices=["true", "false"], help="Disable Louvain (optional).")
+	parser.add_argument("--iterations", type=int, help="Number of iterations (optional).")
+	parser.add_argument("--gui", action='store_true', help="Show plot in new window (optional).")
+	
+	# Parse arguments
+	args = parser.parse_args()
+	
+	# Validate JSON file path
+	if not os.path.isfile(args.json_file):
+			raise ValueError(f"File {args.json_file} does not exist.")
+	
+	# Assign parsed arguments to variables
+	color = args.color
+	layout = args.layout
+	min_count = args.min_count
+	min_percent = args.min_percent
+	louvain = args.Louvain.lower() == "true" if args.Louvain else None
+	iterations = args.iterations
+	gui = args.gui
 
-	if not os.path.isfile(arg):
-		raise ValueError(f"File {arg} does not exist.")
-
-	with (open(arg, 'r') as file):
+	with (open(args.json_file, 'r') as file):
 		all_params = load(file)
 
 	required_db_keys = ["dbname", "user", "host", "port"]
@@ -32,33 +53,39 @@ if __name__ == "__main__":
 	db_params = validate_and_extract_params(all_params, required_db_keys,
 																					optional_db_keys)
 
-	required_db_keys = ["layout", "color", "output_dir"]
-	optional_db_keys = ["louvain", "min_games", "min_percent", "iterations"]
-	plot_params = validate_and_extract_params(all_params, required_db_keys,
-																						optional_db_keys)
-
-	data = getPlayersOpenings(db_params, plot_params["color"], plot_params.get(
-		"min_games", 50), plot_params.get("min_percent", 0.05))
+	data = getPlayersOpenings(
+		db_params,
+		color,
+		min_games=min_count if min_count is not None else 100,
+		min_percent=min_percent if min_percent is not None else 0.01
+	)
 
 	logger.info("Displaying fetched data:")
 	print(data)
 
 	graph = getNetworkGraph(data)
 
-	if plot_params.get("layout") == "kamada":
+	if layout == "kamada":
 		pos = nx.kamada_kawai_layout(graph)
-	elif plot_params.get("layout") == "spring":
-		pos = nx.spring_layout(graph, iterations=plot_params.get("iterations", 50))
+	elif layout == "spring":
+		pos = nx.spring_layout(graph, iterations=iterations if iterations is not None else 50)
 	else:
 		raise ValueError("Invalid layout type. Must be 'kamada' or 'spring'.")
 
-	if plot_params.get("louvain") and plot_params["louvain"] == "True":
+	partitions = None
+	if louvain is None or louvain:
+		logger.info("Calculating Louvain partitions...")
 		partitions = community_louvain.best_partition(graph)
-		plotLouvainPartitions(graph, pos, partitions, layout=plot_params["layout"])
-		exportPlotToJSON(graph, pos, plot_params["output_dir"] + "output.json",
-										 partitions)
+		if gui is not None and gui:
+			plotLouvainPartitions(graph, pos, partitions)
 	else:
-		plotBasic(graph, pos, show_edge_labels=False)
-		exportPlotToJSON(graph, pos, plot_params["output_dir"] + "output.json")
-
-	plt.show()
+		if gui is not None and gui:
+			plotBasic(graph, pos, show_edge_labels=False)
+		
+		
+	exportPlotToJSON(
+		graph, 
+		pos, 
+		validate_and_extract_params(all_params, ["output"], [""]).get('output'), 
+		partitions
+	)
