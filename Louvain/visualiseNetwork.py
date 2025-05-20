@@ -11,18 +11,18 @@ logger = logging.getLogger(__name__)
 
 
 def plotBasic(
-		graph: nx.Graph, pos: any, show_edge_labels: bool = True,
+		graph: nx.Graph, pos: any, output:str, show_edge_labels: bool = True,
 		figure_size: tuple = (60, 50), node_sizes: tuple = (500, 300)
 ) -> None:
 	"""
 	Plots the graph using the Kamada-Kawai layout.
 	:param graph: The bipartite graph to be plotted.
 	:param pos: The positions of the nodes in the graph.
+	:param output: Path to the output image file.
 	:param show_edge_labels: Whether to display edge labels (weights).
 	:param figure_size: Size of the figure (width, height).
 	:param node_sizes: Sizes of the nodes (opening, player).
 	"""
-	# pos = nx.kamada_kawai_layout(graph)
 	colors = ["lightblue" if graph.nodes[node]["type"] == "player" else "green"
 						for
 						node in
@@ -44,22 +44,23 @@ def plotBasic(
 		edge_labels = nx.get_edge_attributes(graph, "weight")
 		nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels,
 																 font_size=5)
-	plt.savefig("Louvain/output_plot.png")
+	plt.savefig(output)
+	logger.info(f"Graph plotted and exported to {output}.")
 
 def plotLouvainPartitions(
-		graph: nx.Graph, pos: any, partition: any, show_edge_labels: bool = False,
-		figure_size: tuple = (80, 65), layout: str = "spring",
-		node_sizes: tuple = (500, 300)
-) -> any:
+		graph: nx.Graph, pos: any, output: str, partition: any,
+		show_edge_labels: bool = False,
+		figure_size: tuple = (80, 65), node_sizes: tuple = (500, 300)
+) -> None:
 	"""
 	Plots the graph with nodes colored based on Louvain partitions and separates
 	players from openings using different shapes.
 	:param graph: The graph to be plotted.
 	:param pos: The positions of the nodes in the graph.
+	:param output: Path to the output image file.
 	:param partition: Louvain partitioning of the graph.
 	:param show_edge_labels: Whether to display edge labels (weights).
 	:param figure_size: Size of the figure (width, height).
-	:param layout: Layout type ('kamada' or 'spring').
 	:param node_sizes: Sizes of the nodes (opening, player).
 	"""
 	logger.info("Plotting graph with Louvain partitions...")
@@ -77,12 +78,6 @@ def plotLouvainPartitions(
 	player_colors = [community_colors[partition[node]] for node in players]
 	opening_colors = [community_colors[partition[node]] for node in openings]
 
-	if layout == "kamada":
-		pos = nx.kamada_kawai_layout(graph)
-	elif layout == "spring":
-		pos = nx.spring_layout(graph)
-	else:
-		raise ValueError("Invalid layout. Choose 'kamada' or 'spring'.")
 	plt.figure(figsize=figure_size)
 
 	# Draw players (circles)
@@ -109,12 +104,10 @@ def plotLouvainPartitions(
 
 	plt.axis("off")
 	plt.tight_layout()
-	plt.savefig("Louvain/output_plot.png")
+	plt.savefig(output)
 
-	logger.info("Graph plotted with Louvain partitions.")
-
-	return partition
-
+	logger.info(f"Graph plotted with Louvain partitions and exported to "
+							f"{output}.")
 
 def exportPlotToJSON(
 		graph: nx.Graph, pos: any, output_file: str, partitions: dict = None
