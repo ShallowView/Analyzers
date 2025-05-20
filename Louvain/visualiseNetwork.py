@@ -2,7 +2,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import json
 import logging
-from getData import getPartitionSummary
+from Louvain.getData import getPartitionSummary
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO,
@@ -44,6 +44,7 @@ def plotBasic(
 		edge_labels = nx.get_edge_attributes(graph, "weight")
 		nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels,
 																 font_size=5)
+	plt.savefig("Louvain/output_plot.png")
 
 def plotLouvainPartitions(
 		graph: nx.Graph, pos: any, partition: any, show_edge_labels: bool = False,
@@ -108,6 +109,7 @@ def plotLouvainPartitions(
 
 	plt.axis("off")
 	plt.tight_layout()
+	plt.savefig("Louvain/output_plot.png")
 
 	logger.info("Graph plotted with Louvain partitions.")
 
@@ -122,13 +124,9 @@ def exportPlotToJSON(
 	:param graph: The graph to be exported.
 	:param pos: The positions of the nodes in the graph.
 	:param partitions: Louvain partitions of the graph.
-	:param layout: The layout used for the graph (e.g., "spring", "kamada").
 	:param output_file: Path to the output JSON file.
 	"""
 	logger.info("Exporting plot metadata to JSON file...")
-	
-	if partitions is not None:
-		summary = getPartitionSummary(graph, partitions)
 
 	# Prepare metadata
 	metadata = {
