@@ -2,14 +2,8 @@ import pandas as pd
 from sqlalchemy import create_engine
 import time
 import json
+from __init__ import *
 
-# Importez les fonctions d'analyse
-from AnalyseML import (
-    load_games, load_players, load_openings, clean_data,
-    display_statistics, predict_winner, analyze_openings,
-    cluster_games, generate_player_profile,
-    analyze_opening_time_control # Nouvelle importation
-)
 
 # Fonction principale
 def main():
