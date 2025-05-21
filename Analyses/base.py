@@ -7,15 +7,12 @@ from sqlalchemy import create_engine
 import os
 from dotenv import load_dotenv
 
-from Analyses.__main__ import OUTPUT_DIR
 """
 Analyses -> format = <directory_acronym>/<elements_in_acronym> : <explanation>
 
 T_TC/title_and_time_control : Finding a relation between the title and the time control
 
 """
-
-
 
 """
 CONSTANTS
@@ -135,14 +132,17 @@ def filter_data_by_threshold(df: pd.DataFrame, row_threshold=None, col_threshold
 
     return filtered_df
 
-
-# 
-def store_analysis_file(analysis_name : str, analysis_file_content : Figure | None):
+"""
+To store the json file content somewhere still to be determined
+"""
+DEFAULT_DIR = '/home/ryanator/DevDurable/Project/Analyzers/Analyses/json/'
+def store_analysis_file(analysis_location : str, analysis_file_content : Figure | None):
     if analysis_file_content is None:
         print("Analysis content is empty")
         return
-    with open(__file__ + '../' + OUTPUT_DIR + analysis_name + '.json', "w") as file:
-        file.write(str(analysis_file_content))
+    # location = DEFAULT_DIR + analysis_location + '.json'
+    # with open(location, "w") as file:
+    #     file.write(str(analysis_file_content))
         
 """
 Admin configuration functions
@@ -163,19 +163,18 @@ def set_storage_directory(storage_directory_name: str, magic_file_attribute) -> 
     return current_dir_name + "/" +  storage_directory_name + "/"
 
 """
-This is where wrapper functions for plots are to be placed
+This is where wrapper functions for plots are to be placed, they will produce JSON
+They do NOT savefig anymore
 """
-# DOESN'T SAVE FIG ANYMORE
-def plot_heatmap(df : pd.DataFrame, title : str, xlabel  : str, ylabel : str, filename="heatus_mapus.png", annot=True, cmap='viridis', fmt=".2f", figsize=(10, 8)) -> Axes:
+def plot_heatmap(df : pd.DataFrame, title : str, xlabel  : str, ylabel : str, annot=True, cmap='viridis', fmt=".2f", figsize=(10, 8)) -> Axes:
     """
-    Generates and saves a heatmap plot from a DataFrame.
+    Generates a heatmap plot from a DataFrame
 
     Args:
         df (pd.DataFrame): The DataFrame to plot.
         title (str): The title of the heatmap.
         xlabel (str): The label for the x-axis.
         ylabel (str): The label for the y-axis.
-        filename (str, optional): The name of the file to save the plot to. Defaults to "heatus_mapus.png".
         annot (bool, optional): Whether to display annotations on the heatmap cells. Defaults to True.
         cmap (str, optional): The colormap to use. Defaults to 'viridis'.
         fmt (str, optional): The format string for the annotations. Defaults to ".2f".
@@ -239,10 +238,6 @@ def plot_scatter_biplot(title : str, row_coordinates : pd.DataFrame, columns_coo
     plt.legend()
     plt.grid(True)
     plottyman.savefig(filepath)
-
-"""
-This is where the counterpart functions for the JSON representation of the wrapper functions abovve will be placed
-"""
 
 """
 Other

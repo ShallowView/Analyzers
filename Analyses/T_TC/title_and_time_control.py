@@ -1,18 +1,6 @@
-from plotly import tools
-from Analyses.base import *
-
-"""
-ADMIN ZONE : delcaring filenames and other
-""" 
-storage_directory = set_storage_directory(DEFAULT_STORAGE_DIR, __file__)
-json_storage_directory = set_storage_directory("json", __file__)
-# files in storage directory
-heatmap_file_location = storage_directory + "heatmap_relation_title_and_time_control.png"
-# files in json storage
-heatmap_json = json_storage_directory + "heatmap.json"
-# files in parent directory
-test_csv_file_location  = storage_directory + "../" + "test_csv_relation_title_and_time_control.csv"
-
+from ..base import *
+from ..registry import * 
+import plotly.tools as tools
 
 """
 ANALYSIS PROFILE
@@ -42,67 +30,54 @@ LEFT JOIN
 LEFT JOIN
     players black ON g.black = black.id
 WHERE white.title IS NOT NULL OR black.title IS NOT NULL
-LIMIT {TEST_ROW_COUNT};"""
+LIMIT {10};"""
 
 
 ### START OF ANALYSIS ##########################################################################################################
 
-games_with_titles_df = fetch_data_from_sql(title_and_time_control_query)
+@register_analysis('T_TC_analysis')
+def T_TC_analysis(plot_names : list[str]):
+    print("T_TC_analysis called")
+    original_data = fetch_data_from_sql(title_and_time_control_query)
+    if (plot_names.__contains__('T_TC_heatmap')):
+        formatted_heatmap_data = format_data_for_plot(original_data)
+        filtered_heatmap_data = filter_data_for_plot(formatted_heatmap_data)
+        heatmap_plot_analysis = plot_title_and_time_control_heatmap(filtered_heatmap_data)
+        store_analysis_file('T_TC_analysis/heatmap', heatmap_plot_analysis)
 
-"""
-This function is needed for categorical data since it has no numerical value, to be understood by pandas it needs a numerical 
-value.
-These numerical values are assigned by this function to these 2 columns
-"""
-title_time_control_distribution_df = calculate_value_distribution(
-    games_with_titles_df,
-    group_column='title',
-    value_column='time_control'
-)
-
-"""
-The heatmap becomes unreadable if this isn't applied, there are too many time controls that have almost no users
-rendering the following plot bloated
-"""
-insignificant_value = 0.10 
-filtered_distribution_df = filter_insignificant_data(title_time_control_distribution_df, threshold=insignificant_value)
-
-"""These are the elements/feautres used in the table"""
-bot_percentages_title = filtered_distribution_df.index
-bot_percentages_time_controls = filtered_distribution_df.iloc[0].index
-bot_percentages_percentage = filtered_distribution_df.iloc[0].values
-
-
-# # Here is the representation of the data in an acceptable format
-# data = []
-# for i in range(len(bot_percentages_title)):
-#     for j in range(len(bot_percentages_title)):
-#         row = {
-#             'title':  bot_percentages_title[i],
-#             'time_control' : bot_percentages_time_controls[j],
-#             'percentage' :  bot_percentages_percentage[j]    
-#         }
-#         data.append(row)
-# data = pd.DataFrame(data)
-
-ax : Axes = plot_heatmap(
-    filtered_distribution_df,
+@assign_plot_to_analysis('T_TC_analysis','T_TC_heatmap')
+def plot_title_and_time_control_heatmap(formatted_and_filtered : pd.DataFrame):
+    print("T_TC_analysis/heatmap called")
+    return tools.mpl_to_plotly(plot_heatmap(
+    formatted_and_filtered,
     title='Proportion of Time Controls by Player Title (Filtered)',
     xlabel='Time Control',
-    ylabel='Player Title',
-    filename=heatmap_file_location
-)
+    ylabel='Player Title'
+    ).get_figure())
 
-plotly_fig = tools.mpl_to_plotly(ax.get_figure())
-print(plotly_fig)    
+def format_data_for_plot(original_data : pd.DataFrame):
+    """
+    This function is needed for categorical data since it has no numerical value, to be understood by pandas it needs a numerical 
+    value.
+    These numerical values are assigned by this function to these 2 columns
+    """
+    return calculate_value_distribution(
+        original_data,
+        group_column='title',
+        value_column='time_control'
+    )
+    
+def filter_data_for_plot(formatted_data : pd.DataFrame):
+    """
+    The heatmap becomes unreadable if this isn't applied, there are too many time controls that have almost no users
+    rendering the following plot bloated
+    """
+    insignificant_value = 0.10 
+    filtered_distribution_df = filter_insignificant_data(formatted_data, threshold=insignificant_value)
+    """These are the elements/feautres used in the table"""
+    # bot_percentages_title = filtered_distribution_df.index
+    # bot_percentages_time_controls = filtered_distribution_df.iloc[0].index
+    # bot_percentages_percentage = filtered_distribution_df.iloc[0].values
+    return filtered_distribution_df
 
-"""
-Here get the heatmap metadata in json
-"""
-# json_metadata = heatmap_plot_json(ax,filtered_distribution_df)
-# try:
-#     with open(heatmap_json, 'w') as f:
-#         f.write(json_metadata)
-# except IOError as e:
-#     print(f"An error occurred while writing to the file: {e}")
 
