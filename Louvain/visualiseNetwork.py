@@ -123,9 +123,7 @@ def exportPlotToJSON(
 
 	# Prepare metadata
 	metadata = {
-		"partitions":[
-			getPartitionSummary(graph, partitions) if partitions else [{}]
-		],
+		"partitions":getPartitionSummary(graph, partitions) if partitions else [{}],
 		"nodes": [
 			{
 				"id": node,
