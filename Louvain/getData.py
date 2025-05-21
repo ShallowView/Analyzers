@@ -91,10 +91,11 @@ def getNetworkGraph(data: pd.DataFrame) -> nx.Graph:
 	# Add opening nodes
 	openings = data["opening_name"].unique()
 	play_count = data.groupby("opening_name")["times_played"].sum()
+	elo = data.groupby("opening_name")["player_elo"].mean()
 	B.add_nodes_from(
 		(opening,
-		 {"bipartite": 1, "type": "opening", "play_count": int(play_count[
-																														 opening])})
+		 {"bipartite": 1, "type": "opening", "elo": round(elo[opening], 1), 
+			"play_count": int(play_count[opening])})
 		for opening in openings
 	)
 

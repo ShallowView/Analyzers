@@ -132,7 +132,7 @@ def exportPlotToJSON(
 				"type": graph.nodes[node].get("type", "unknown"),
 				"position": {"x": pos[node][0], "y": pos[node][1]},
 				"community": partitions[node] if partitions else None,
-				"max_elo": graph.nodes[node].get("elo", None),
+				"elo": graph.nodes[node].get("elo", None),
 				"play_count": graph.nodes[node].get("play_count", None),
 			}
 			for node in graph.nodes
