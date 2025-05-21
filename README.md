@@ -7,7 +7,7 @@ _Soon..._
 ### Technician installation guide
 #### Inserting new PGN files to a postgreSQL database
 
-Create a config.json file containing the connection parameters to the postgreSQL server and the paths to the PGNFiles you wish to add. An [example](https://github.com/ShallowView/Analyzers/blob/bc15b9bebc912fdcf9aab287c73a106685f735c4/DataCollection/config.json) is present in DataCollection/
+Create a config.json file containing the connection parameters to the postgreSQL server and the paths to the PGNFiles you wish to add. An [example](DataCollection/config.json) is present in DataCollection/
 
 Launch the module:
 ``` bash
@@ -16,12 +16,13 @@ python -m DataCollection <config_file>
 
 #### Generating network graphs with Louvain partitioning
 
-Create a input.json file containing the connection parameters to the postgreSQL server and the JSON output path. An [example](https://github.com/ShallowView/Analyzers/blob/987ff18241b36f8aa059fa75a3895d0925b9144c/Louvain/input.json) is present in Louvain/
+Create a input.json file containing the connection parameters to the postgreSQL server and the JSON output path. An [example](Louvain/input.example.json) is present in Louvain/
 
 Launch the module:
 ``` bash
 python -m Louvain -c <color> -l <layout> <config_file>
 ```
+An example of the output of this command is present [here](Louvain/output.example.json)
 
 For additional options, you can use the help command:
 ``` bash
