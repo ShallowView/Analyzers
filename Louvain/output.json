@@ -1,145 +1,165 @@
 {
-    "partitions": [
-        [
-            {
-                "id": 19,
-                "main_opening": "Bird Opening",
-                "player_count": 11,
-                "players": [
-                    "German308",
-                    "JennPederson",
-                    "Dandel2i3Fernandez",
-                    "Bierblitz",
-                    "gustavo40",
-                    "DeepBlue44",
-                    "Kotov1986",
-                    "VanuatuLover",
-                    "artjak1000",
-                    "gmmds2694",
-                    "Doctor_check_99"
-                ],
-                "variation_count": 3,
-                "variations": [
-                    "Bird Opening",
-                    "Bird Opening: From's Gambit",
-                    "Bird Opening: Dutch Variation"
-                ],
-                "average_max_elo": 2624.1
-            },
-            {
-                "id": 24,
-                "main_opening": "Hungarian Opening",
-                "player_count": 17,
-                "players": [
-                    "ABtrener",
-                    "Bebas_BKD",
-                    "AlexeyLV",
-                    "vanImpe",
-                    "C2H5OH3",
-                    "Lynx_BOT",
-                    "Sekiro-A",
-                    "Odnoobraz",
-                    "landy887",
-                    "vanimpe",
-                    "Smuelli",
-                    "martylex",
-                    "Jasugi99",
-                    "Shaten01",
-                    "Dgita35492",
-                    "TerribleEndgmePlayer",
-                    "Vic775"
-                ],
-                "variation_count": 6,
-                "variations": [
-                    "Hungarian Opening",
-                    "Hungarian Opening: Indian Defense",
-                    "Hungarian Opening: Symmetrical Variation",
-                    "Hungarian Opening: Sicilian Invitation",
-                    "Hungarian Opening: Slav Formation",
-                    "Lasker Simul Special"
-                ],
-                "average_max_elo": 2594.6
-            }
-        ]
-    ],
-    "nodes": [
-        {
-            "id": "caveman12345",
-            "type": "player",
-            "position": {
-                "x": 0.08573172241449356,
-                "y": 0.45887166261672974
-            },
-            "community": 18
-        },
-        {
-            "id": "chabadnik770",
-            "type": "player",
-            "position": {
-                "x": 0.3324977457523346,
-                "y": 0.16532106697559357
-            },
-            "community": 34
-        },
-        {
-            "id": "semnik",
-            "type": "player",
-            "position": {
-                "x": -0.0047700172290205956,
-                "y": 0.5641775131225586
-            },
-            "community": 18
-        },
-        {
-            "id": "redtom",
-            "type": "player",
-            "position": {
-                "x": 0.0870039314031601,
-                "y": 0.36070626974105835
-            },
-            "community": 18
-        }
-    ],
-    "edges": [
-        {
-            "source": "caveman12345",
-            "target": "King's Indian Attack",
-            "weight": 0.18
-        },
-        {
-            "source": "caveman12345",
-            "target": "King's Indian Attack: Symmetrical Defense",
-            "weight": 0.13
-        },
-        {
-            "source": "caveman12345",
-            "target": "Zukertort Opening",
-            "weight": 0.06
-        },
-        {
-            "source": "caveman12345",
-            "target": "Zukertort Opening: Sicilian Invitation",
-            "weight": 0.07
-        },
-        {
-            "source": "chabadnik770",
-            "target": "Catalan Opening",
-            "weight": 0.12
-        },
-        {
-            "source": "chabadnik770",
-            "target": "Slav Defense: Quiet Variation",
-            "weight": 0.06
-        },
-        {
-            "source": "chabadnik770",
-            "target": "King's Indian Defense: Normal Variation, Rare Defenses",
-            "weight": 0.08
-        },
-        {
-            "source": "chabadnik770",
-            "target": "Gr\u00fcnfeld Defense: Stockholm Variation",
-            "weight": 0.05
-        }
-    ]
+  "partitions": [
+    {
+      "id": 13,
+      "main_opening": "French Defense",
+      "player_count": 11,
+      "players": [
+        "eduardo_gonzalez",
+        "Zokimo",
+        "diemerio",
+        "inex",
+        "Goodluck3",
+        "Euroshima",
+        "Maartenols",
+        "iddo",
+        "NickCF",
+        "SirHarmony",
+        "Sylma"
+      ],
+      "variation_count": 3,
+      "variations": [
+        "French Defense: Exchange Variation",
+        "Blackmar-Diemer Gambit",
+        "Sicilian Defense: Wing Gambit"
+      ],
+      "average_max_elo": 2000.4,
+      "total_play_count": 1998
+    },
+    {
+      "id": 14,
+      "main_opening": "Bishop's Opening",
+      "player_count": 24,
+      "players": [
+        "Jorkkix",
+        "chessname1234",
+        "Obanta",
+        "MoroArg",
+        "marcelbloing",
+        "Simon_Gandzakeci",
+        "Bill-Hicks",
+        "troterocom",
+        "betmens",
+        "galan",
+        "TomoKnez",
+        "Septem",
+        "SiavashHuman",
+        "kaisaw",
+        "Potkonjak",
+        "Padrino52",
+        "maxxxl",
+        "husseinhhh",
+        "rachipa",
+        "bidiot-2017",
+        "ruebezahl",
+        "trystal",
+        "aki_Milano",
+        "segeiiii"
+      ],
+      "variation_count": 5,
+      "variations": [
+        "Sicilian Defense: Bowdler Attack",
+        "Bishop's Opening",
+        "Center Game: von der Lasa Gambit",
+        "Bishop's Opening: Berlin Defense",
+        "Center Game"
+      ],
+      "average_max_elo": 1890.5,
+      "total_play_count": 4298
+    },
+    {
+      "id": 15,
+      "main_opening": "Grob Opening",
+      "player_count": 14,
+      "players": [
+        "AnimalTk",
+        "Alexxadrez32",
+        "teo_laur",
+        "ostapknysh",
+        "crex",
+        "frenibas",
+        "Mo-Green",
+        "Gugo_de_Paien",
+        "ricdac",
+        "capestile",
+        "fastest61",
+        "Perfectos",
+        "HenryGrob",
+        "oktay19656"
+      ],
+      "variation_count": 1,
+      "variations": [
+        "Grob Opening"
+      ],
+      "average_max_elo": 1914.0,
+      "total_play_count": 1970
+    }
+  ],
+  "nodes": [
+    {
+      "id": "jfn",
+      "type": "player",
+      "position": {
+        "x": -0.44935280084609985,
+        "y": -0.06399358808994293
+      },
+      "community": 0,
+      "elo": 2050,
+      "play_count": 219
+    },
+    {
+      "id": "Patex",
+      "type": "player",
+      "position": {
+        "x": 0.5175236463546753,
+        "y": -0.33853471279144287
+      },
+      "community": 1,
+      "elo": 1303,
+      "play_count": 316
+    },
+    {
+      "id": "Darkantaris",
+      "type": "player",
+      "position": {
+        "x": 0.14299358427524567,
+        "y": 0.7509928941726685
+      },
+      "community": 2,
+      "elo": 2225,
+      "play_count": 323
+    }
+  ],
+  "edges": [
+    {
+      "source": "jfn",
+      "target": "Sicilian Defense",
+      "weight": 0.13
+    },
+    {
+      "source": "jfn",
+      "target": "French Defense: Queen's Knight",
+      "weight": 0.12
+    },
+    {
+      "source": "Patex",
+      "target": "Van't Kruijs Opening",
+      "weight": 0.94
+    },
+    {
+      "source": "Darkantaris",
+      "target": "Bird Opening",
+      "weight": 0.48
+    },
+    {
+      "source": "Darkantaris",
+      "target": "Bird Opening: Dutch Variation",
+      "weight": 0.22
+    },
+    {
+      "source": "Cedg2015",
+      "target": "Hungarian Opening",
+      "weight": 0.56
+    }
+  ]
 }
