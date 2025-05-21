@@ -11,6 +11,26 @@ logging.basicConfig(level=logging.INFO,
 										format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+SQLQuery = """
+           WITH player_games AS (SELECT p.id     AS player_id,
+                                        COUNT(*) AS total_games
+                                 FROM players p
+                                          JOIN public.games g ON p.id = g.{color}
+                                 GROUP BY p.id)
+           SELECT p.name    AS player_name,
+                  p.max_elo AS player_elo,
+                  o.name    AS opening_name,
+                  COUNT(*)  AS times_played,
+                  ROUND((COUNT(*)::decimal / pg.total_games),2)  AS percentage_played
+           FROM players p
+                    JOIN public.games g ON p.id = g.{color}
+                    JOIN public.openings o ON o.id = g.opening
+               			JOIN player_games pg ON p.id = pg.player_id
+           GROUP BY p.name, p.max_elo, o.name, pg.total_games
+           HAVING COUNT(*) >= {min_count}
+              AND (COUNT(*)::decimal / pg.total_games) >= {min_percent} 
+					 """
+
 
 def getPlayersOpenings(
 		connection_params: dict, color: str, min_games: int = 100, 
@@ -34,29 +54,9 @@ def getPlayersOpenings(
 	try:
 		with psycopg.connect(**connection_params) as conn:
 			with conn.cursor() as cursor:
-				from_query = SQL("""
-                         WITH player_games AS (SELECT p.id     AS player_id,
-                                                      COUNT(*) AS total_games
-                                               FROM players p
-                                                        JOIN public.games g ON p.id = g.{color}
-                                               GROUP BY p.id)
-                         SELECT p.name   AS player_name,
-														 		p.max_elo AS player_elo,
-                                o.name   AS opening_name,
-                                COUNT(*) AS times_played,
-                                ROUND((COUNT(*)::decimal / pg.total_games),
-                                      2) AS percentage_played
-                         FROM players p
-                                  JOIN public.games g ON p.id = g.{color}
-                    JOIN public.openings o
-                         ON o.id = g.opening
-                             JOIN player_games pg ON p.id = pg.player_id
-                         GROUP BY p.name, p.max_elo, o.name, pg.total_games
-                         HAVING COUNT(*) >= {min_count}
-                            AND (COUNT(*)::decimal / pg.total_games) >= {min_percent}
-												 """).format(color=Identifier(color),
-																		 min_count=min_games,
-																		 min_percent=min_percent)
+				from_query = SQL(SQLQuery).format(color=Identifier(color),
+																					min_count=min_games,
+																					min_percent=min_percent)
 
 				cursor.execute(from_query)
 				result = cursor.fetchall()

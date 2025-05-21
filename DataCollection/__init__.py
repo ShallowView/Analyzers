@@ -78,7 +78,7 @@ def PGNtoDataFrame(files: list[str], chunk_size : int = 500000) -> Iterator[
 	except FileNotFoundError as e:
 		logger.error(f"File not found")
 	except Exception as e:
-		logger.error(f"Unexpected error while processing PGN file: " + f"{e}")
+		logger.error(f"Unexpected error while processing PGN file: {e}")
 	return None
 
 def __process_players_chunk(
@@ -462,7 +462,7 @@ def validate_and_extract_params(
 	missing_keys = [key for key in required_keys if params.get(key) is None]
 	if missing_keys:
 		raise ValueError(
-			f"Missing required parameters: {', '.join(missing_keys)}"
+			f"Missing required parameters: {", ".join(missing_keys)}"
 		)
 
 	extracted_params = {key: params[key] for key in required_keys}

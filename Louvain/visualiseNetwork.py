@@ -106,8 +106,9 @@ def plotLouvainPartitions(
 	plt.tight_layout()
 	plt.savefig(output)
 
-	logger.info(f"Graph plotted with Louvain partitions and exported to "
-							f"{output}.")
+	logger.info(
+		f"Graph plotted with Louvain partitions and exported to {output}."
+	)
 
 def exportPlotToJSON(
 		graph: nx.Graph, pos: any, output_file: str, partitions: dict = None
