@@ -70,10 +70,12 @@ def getPlayersOpenings(
 		return pd.DataFrame()
 
 
-def getNetworkGraph(data: pd.DataFrame) -> nx.Graph:
+def getNetworkGraph(data: pd.DataFrame, weighted: bool) -> nx.Graph:
 	"""
 	Generates a bipartite graph from the given data.
 	:param data: DataFrame containing opening percentage per player data.
+	:param weighted: Boolean indicating whether to add weighted edges between 
+	openings. if false the weight will be 1.
 	:return: Bipartite graph with players and openings as nodes.
 	"""
 
@@ -104,18 +106,21 @@ def getNetworkGraph(data: pd.DataFrame) -> nx.Graph:
 		B.add_edge(row["player_name"], row["opening_name"],
 							 weight=float(row["percentage_played"]))
 
-	__add_opening_edges(B, data)
+	__add_opening_edges(B, data, weighted)
 
 	return B
 
 
-def __add_opening_edges(graph: nx.Graph, data: pd.DataFrame) -> None:
+def __add_opening_edges(graph: nx.Graph, data: pd.DataFrame, weighted: bool) \
+		-> None:
 	"""
 	Adds edges between openings whose name before the ':' character matches
 	the full name of another opening node, using the provided DataFrame.
 
 	:param graph: The bipartite graph containing player and opening nodes.
 	:param data: DataFrame containing opening names.
+	:param weigthed: Boolean indicating whether to add weighted edges between 
+	openings.
 	"""
 	# Extract unique opening names from the DataFrame
 	openings = data["opening_name"].unique()
@@ -132,7 +137,15 @@ def __add_opening_edges(graph: nx.Graph, data: pd.DataFrame) -> None:
 				graph.add_node(prefix, bipartite=1, type="opening")
 				opening_set.add(prefix)  # Update the set
 			# Add the edge between the opening and the prefix
-			graph.add_edge(opening, prefix, weight=1.)
+
+			# Calculate the weight as the ratio of games played in the variation to the total games in the root opening and its variations
+			total_games_prefix = data[data["opening_name"].str.startswith(prefix)][
+				"times_played"].sum()
+			variation_games = data[data["opening_name"] == opening][
+				"times_played"].sum()
+			weight = round(variation_games / total_games_prefix, 2) if total_games_prefix > 0 else 0
+			
+			graph.add_edge(opening, prefix, weight=weight)
 
 
 def getPartitionSummary(graph: nx.Graph, partition: dict) -> list[dict]:

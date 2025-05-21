@@ -32,6 +32,10 @@ if __name__ == "__main__":
 											choices=["spring", "kamada"],
 											help="How to position the nodes/vertices"
 													 " for the graph (required).")
+	parser.add_argument("-w", "--weighted", action="store_true",
+		help="Use weighted edges between openings in the graph, if not specified,"
+				 " the weights between openings and their variations is 1 (optional)."
+	)
 	parser.add_argument("json_file", type=str,
 											help="Path to the output JSON file (required).")
 	parser.add_argument("--min_count", type=int,
@@ -64,6 +68,7 @@ if __name__ == "__main__":
 	# Assign parsed arguments to variables
 	color = args.color
 	layout = args.layout
+	weighted = args.weighted
 	min_count = args.min_count
 	min_percent = args.min_percent
 	louvain = args.Louvain.lower() == "true" if args.Louvain else None
@@ -89,7 +94,7 @@ if __name__ == "__main__":
 	print(data)
 
 	logger.info("Creating network graph...")
-	graph = getNetworkGraph(data)
+	graph = getNetworkGraph(data, weighted)
 
 	logger.info(
 		f"Calculating node positions for {graph.number_of_nodes()} nodes. "
