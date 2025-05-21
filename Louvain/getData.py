@@ -81,14 +81,22 @@ def getNetworkGraph(data: pd.DataFrame) -> nx.Graph:
 
 	# Add player nodes
 	players = data[["player_name", "player_elo"]].drop_duplicates()
+	play_count = data.groupby("player_name")["times_played"].sum()
 	B.add_nodes_from(
-			(row["player_name"], {"bipartite": 0, "type": "player", "elo": row["player_elo"]})
+			(row["player_name"], {"bipartite": 0, "type": "player", "elo": row[
+				"player_elo"], "play_count": int(play_count[row["player_name"]])})
 			for _, row in players.iterrows()
 	)
 
 	# Add opening nodes
 	openings = data["opening_name"].unique()
-	B.add_nodes_from(openings, bipartite=1, type="opening")
+	play_count = data.groupby("opening_name")["times_played"].sum()
+	B.add_nodes_from(
+		(opening,
+		 {"bipartite": 1, "type": "opening", "play_count": int(play_count[
+																														 opening])})
+		for opening in openings
+	)
 
 	# Add edges between players and openings with weights (percentages)
 	for _, row in data.iterrows():
@@ -145,8 +153,10 @@ def getPartitionSummary(graph: nx.Graph, partition: dict) -> list[dict]:
 		
 		openings_main = [str(node).split(':')[0] for node in nodes if
 										 graph.nodes[node]["type"] == "opening"]
-		openings_var = [node for node in nodes if
-										graph.nodes[node]["type"] == "opening"]
+		openings_var = [
+				{"name": node, "play_count": graph.nodes[node].get("play_count", 0)}
+				for node in nodes if graph.nodes[node]["type"] == "opening"
+		]
 		elos = [graph.nodes[node]["elo"] for node in nodes if
 					 graph.nodes[node]["type"] == "player"]
 		players = [node for node in nodes if graph.nodes[node]["type"] == "player"]
@@ -160,8 +170,9 @@ def getPartitionSummary(graph: nx.Graph, partition: dict) -> list[dict]:
 			"player_count": len(players) if players else 0,
 			"players": players,
 			"variation_count": len(openings_var) if openings_main else None,
-			"variations": openings_var,
-			"average_max_elo": round(sum(elos) / len(players), 1) if players else None
+			"variations": [var["name"] for var in openings_var],
+			"average_max_elo": round(sum(elos) / len(players), 1) if players else None,
+			"total_play_count": sum(var["play_count"] for var in openings_var)
 		})
 	
 	return partition_summary
