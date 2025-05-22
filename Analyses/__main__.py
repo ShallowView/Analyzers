@@ -1,7 +1,9 @@
-from Analyses.O_TC.opening_and_time_control import * 
-from Analyses.T_TC.title_and_time_control import *
-from Analyses.registry import *
-from Analyses.base import * 
+from email import contentmanager
+from .O_TC.opening_and_time_control import * 
+from .T_TC.title_and_time_control import *
+from .MCA.correspondance_opening_time_control_title import *
+from .registry import *
+from .base import * 
 import json
 import argparse
 import warnings
@@ -14,7 +16,6 @@ warnings.filterwarnings('ignore', message='Dang! That path collection is out of 
 
 OUTPUT_DIR = 'json'
 if __name__ == "__main__":
-    
     
     with open("possible_analyses.json", "w") as possible_analyses_file:
         possible_analyses_file.write(json.dumps(plot_registry))
@@ -41,6 +42,10 @@ if __name__ == "__main__":
             case {"O_TC_analysis": plot_list, **rest}:
                 O_TC_analysis(plot_list)
                 content_copy.pop("O_TC_analysis")
+                processed = True
+            case {"MCA_analysis" : plot_list, **rest}:
+                MCA_analysis(plot_list)
+                content_copy.pop("MCA_analysis")
                 processed = True
             case _:
                 raise Exception(f"Analysis not possible for: {remaining_keys[0]}")

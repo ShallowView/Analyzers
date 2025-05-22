@@ -218,17 +218,19 @@ def plot_barplot(data : pd.DataFrame, lables_list , values_list, title: str, xla
     plt.close()
     return axes_data
 
-def plot_scatter_biplot(title : str, row_coordinates : pd.DataFrame, columns_coordinates : pd.DataFrame, x_label : str = 'Component 1', y_label : str = 'Component 2', annotations = False, filepath :str  = "scatterplott_MCA_biplot.png"): 
+def plot_scatter_biplot(title : str, row_coordinates : pd.DataFrame, columns_coordinates : pd.DataFrame, x_label : str = 'Component 1', y_label : str = 'Component 2', annotations = False, filepath :str  = "scatterplott_MCA_biplot.png") -> dict[str,Axes]: 
     """
-    
+    This plot conntains 2 separate scatterplots, the intent and hope is to be able to render both in the front
+    and superimpose them, one on top of the other, maybe even on a toggle
     """
     # need to process the row andd columns from the mca object after analysis
     row_coordinates.rename(columns={0: x_label, 1: y_label}, inplace=True)
     columns_coordinates.rename(columns={0: x_label, 1: y_label}, inplace=True)
     
-    plottyman = plt.figure(figsize=(10, 10))
-    sns.scatterplot(x=x_label, y=y_label, data=row_coordinates, label='Rows')
-    sns.scatterplot(x=x_label, y=y_label, data=columns_coordinates, marker='^', color='red', label='Columns')
+    scatter_figure = plt.figure(figsize=(10, 10))
+    plot_axes : dict[str,Axes] = {}
+    plot_axes["rows"] = sns.scatterplot(x=x_label, y=y_label, data=row_coordinates, label='Rows')
+    plot_axes["columns"] = sns.scatterplot(x=x_label, y=y_label, data=columns_coordinates, marker='^', color='red', label='Columns')
     if annotations:
         for i, row in columns_coordinates.iterrows():
             plt.annotate(row['index'], (row[x_label], row[y_label]), textcoords="offset points", xytext=(5,5), ha='left')
@@ -237,7 +239,8 @@ def plot_scatter_biplot(title : str, row_coordinates : pd.DataFrame, columns_coo
     plt.ylabel(y_label)
     plt.legend()
     plt.grid(True)
-    plottyman.savefig(filepath)
+    scatter_figure.savefig('somewhere.png')
+    return plot_axes
 
 """
 Other

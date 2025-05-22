@@ -1,19 +1,12 @@
-from altair import LayerChart
-from matplotlib.pyplot import plot
-from Analyses.base import *
+from xml.sax.handler import property_interning_dict
+
+from matplotlib.figure import SubFigure
+from ..registry import *
+from ..base import *
+import plotly.tools as tools
+import plotly.express as px
+import plotly.graph_objects as go
 import prince
-
-"""
-ADMIN ZONE : delcaring filenames and other
-""" 
-storage_directory = set_storage_directory(DEFAULT_STORAGE_DIR, __file__)
-json_storage_directory = set_storage_directory("json", __file__)
-csv_stotrage_direcotry = set_storage_directory("csv", __file__)
-
-# files in findings
-try_plot_image = storage_directory + "apples.png"
-
-csv_test_data = csv_stotrage_direcotry + "test_csv.csv"
 
 """
 ANALYSIS PROFILE
@@ -25,7 +18,7 @@ Question                : Is there feature in this set that is more favoured or 
 Answer                  : 
 Speculation             : 
 
-Current problem         : This was supposed to find whihc of the combinations was more important,
+Current problem         : This was supposed to find which of the combinations was more important,
                           which would summarize other analyses we have made. However, the high different 
                           in openings played ALMOST ALL in the same time control doesn't allow for a 
                           good insight into any other aspect. The title && time control is too great to 
@@ -54,54 +47,50 @@ LEFT JOIN
 WHERE white.title IS NOT NULL OR black.title IS NOT NULL
 """
 
-if not file_exists(csv_test_data):
-    fetch_sql_and_save_to_csv(
-        query=opening_time_control_title_query, 
-        output_csv_path=csv_test_data)
+### START OF ANALYSIS ##########################################################################################################
+@register_analysis('MCA_analysis')
+def MCA_analysis(list_of_plots : list[str]) -> None:
+    print("MCA_analysis called")
+    general_data = fetch_data_from_sql(opening_time_control_title_query)
+    if (list_of_plots.__contains__('scatter_biplot')):
+        print("MCA_analysis/scatter_biplot called")
+        fitted_data : prince.MCA = process_and_fit_data(general_data)
+        formatted_data = format_data_for_scatter_biplot(general_data, fitted_data)
+        plot_MCA_scatter_biplot(formatted_data)
 
-correspondance_opening_time_control_title : pd.DataFrame = pd.read_csv(csv_test_data, nrows=100)
+@assign_plot_to_analysis('MCA_analysis', 'scatter_biplot')
+def plot_MCA_scatter_biplot(coordinates : dict[str,pd.DataFrame]) -> list:
+    both_plots = plot_scatter_biplot(
+        title='Biplot from scatterplots',
+        row_coordinates=coordinates["row_data"],
+        columns_coordinates=coordinates["column_data"],
+        annotations=False
+    )
+    row_axe : Figure|SubFigure|None = both_plots["rows"].get_figure()
+    column_axe : Figure|SubFigure|None = both_plots['columns'].get_figure()
+    if isinstance(row_axe, Figure) and isinstance(column_axe, Figure):
+        row_axe.savefig('row_plot_MCA.png')
+        column_axe.savefig('columns_plot_MCA.png')
+    return [
+        tools.mpl_to_plotly(row_axe),
+        tools.mpl_to_plotly(column_axe)
+    ]
 
-correspondance_opening_time_control_title.columns = ['time_control', 'opening', 'title']
+def process_and_fit_data(base_data : pd.DataFrame) -> prince.MCA:
+    base_data.columns = ['time_control', 'opening', 'title']
+    mca : prince.MCA = prince.MCA(
+        n_components=2, # do not change, in plot is fixed to 2 
+        n_iter=10,
+        copy=False,
+        check_input=True,
+        engine='sklearn',
+        random_state=None
+    )    
+    return mca.fit(base_data)
 
-# print(correspondance_opening_time_control_title.head())
+def format_data_for_scatter_biplot(base_data : pd.DataFrame, mca : prince.MCA) -> dict[str,pd.DataFrame]:    
+    return {
+        'row_data': mca.row_coordinates(base_data).reset_index(),
+        'column_data' : mca.column_coordinates(base_data).reset_index()
+           }
 
-mca : prince.MCA = prince.MCA(
-    n_components=2, 
-    n_iter=10,
-    copy=True,
-    check_input=True,
-    engine='sklearn',
-    random_state=42
-)
-mca : prince.MCA = mca.fit(correspondance_opening_time_control_title)
-
-print(mca.eigenvalues_summary)
-
-"""
-These are the relatioships tested
-"""
-# print(mca.column_coordinates(correspondance_opening_time_control_title).head())
-
-"""
-The points in the graph are the relations 
-"""
-given_plot_object : LayerChart = mca.plot(
-    correspondance_opening_time_control_title,
-    x_component=0,
-    y_component=1,
-    show_column_markers=True,
-    show_row_markers=True,
-    show_column_labels=True,
-    show_row_labels=False
-)
-
-row_coords_df = mca.row_coordinates(correspondance_opening_time_control_title).reset_index()
-col_coords_df = mca.column_coordinates(correspondance_opening_time_control_title).reset_index()
-
-plot_scatter_biplot(
-    title='Biplot from scatterplots',
-    row_coordinates=row_coords_df,
-    columns_coordinates=col_coords_df,
-    annotations=False,
-    filepath="applemanio.png"
-)

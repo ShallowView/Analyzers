@@ -1,9 +1,0 @@
-{
-    "O_TC_analysis": [
-        "O_TC_barplot"
-    ],
-    "T_TC_analysis": [
-        "T_TC_heatmap",
-        "T_TC_barplot"
-    ]
-}
