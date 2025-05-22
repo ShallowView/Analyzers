@@ -4,6 +4,11 @@ _Soon..._
 > Version: **v0.0.0**
 
 ## Documentation
+
+## Developper conventions guide
+
+
+
 ### Technician installation guide
 _Soon..._
 ### Developer preparation guide

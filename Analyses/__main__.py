@@ -1,5 +1,8 @@
 from email import contentmanager
 
+from Analyses.STATS.clusters import STATS_analysis_clusters
+from Analyses.STATS.openings import STATS_analysis_openings
+
 from .STATS.descriptions import * 
 from .O_TC.opening_and_time_control import * 
 from .T_TC.title_and_time_control import *
@@ -10,6 +13,7 @@ from .base import *
 import json
 import argparse
 import warnings
+import sys
 
 """
 This warning is because of a conversion from a seaborn heatmap to a plotly object
@@ -17,21 +21,25 @@ I am not sure if this will cause issues when reading in JSON, I am ignorign it f
 """
 warnings.filterwarnings('ignore', message='Dang! That path collection is out of this world')
 
-OUTPUT_DIR = 'json'
 if __name__ == "__main__":
     
     with open("possible_analyses.json", "w") as possible_analyses_file:
         possible_analyses_file.write(json.dumps(plot_registry))
-
-    arguments = argparse.ArgumentParser(description=f"""
-    JSON file containing list of analyses to run as well as the plotts needed from those analyses
-    """)
-    arguments.add_argument("path_to_json", type=str)
-    args = arguments.parse_args()
-    recieved_json_path = args.path_to_json
     
-    with open(recieved_json_path) as file:
-        content = json.load(file)
+    if (len(sys.argv) == 1):
+        with open("possible_analyses.json") as default_all:
+            content = json.load(default_all)
+    
+    if (len(sys.argv) != 1):
+        arguments = argparse.ArgumentParser(description=f"""
+        JSON file containing list of analyses to run as well as the plotts needed from those analyses
+        """)
+        arguments.add_argument("path_to_json", type=str)
+        args = arguments.parse_args()
+        recieved_json_path = args.path_to_json
+        
+        with open(recieved_json_path) as file:
+            content = json.load(file)
     
     content_copy = content.copy()
     processed = False
@@ -53,6 +61,14 @@ if __name__ == "__main__":
             case {"STATS_analysis" : plot_list, **rest}:
                 STATS_analysis(plot_list)
                 content_copy.pop("STATS_analysis")
+                processed = True
+            case {"STATS_analysis_openings" : plot_list, **rest}:
+                STATS_analysis_openings(plot_list)
+                content_copy.pop("STATS_analysis_openings")
+                processed = True
+            case {"STATS_analysis_clusters" : plot_list, **rest}:
+                STATS_analysis_clusters(plot_list)
+                content_copy.pop("STATS_analysis_clusters")
                 processed = True
             case _:
                 raise Exception(f"Analysis not possible for: {remaining_keys[0]}")

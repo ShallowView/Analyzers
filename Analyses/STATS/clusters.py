@@ -30,11 +30,10 @@ def STATS_analysis_clusters(plot_list : list[str]):
         plot_data = process_data(cleaned_data)
         plot_stats_clusters(plot_data)
 
-
 @assign_plot_to_analysis('STATS_analysis_clusters', 'clusters')
 def plot_stats_clusters(cluster_data):
     plt.figure(figsize=(10, 6))
-    sns.scatterplot(data=cluster_data, x='white_elo', y='black_elo', hue='Cluster', palette='Set2')
+    axes : Axes = sns.scatterplot(data=cluster_data, x='white_elo', y='black_elo', hue='Cluster', palette='Set2')
     plt.title("Clustering des parties par Elo (KMeans, 4 clusters)")
     plt.grid(True)
     

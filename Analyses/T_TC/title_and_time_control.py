@@ -38,12 +38,12 @@ LIMIT {10};"""
 @register_analysis('T_TC_analysis')
 def T_TC_analysis(plot_names : list[str]):
     print("T_TC_analysis called")
-    # original_data = fetch_data_from_sql(title_and_time_control_query)
-    # if (plot_names.__contains__('heatmap')):
-        # formatted_heatmap_data = format_data_for_plot(original_data)
-        # filtered_heatmap_data = filter_data_for_plot(formatted_heatmap_data)
-        # heatmap_plot_analysis = plot_title_and_time_control_heatmap(filtered_heatmap_data)
-        # store_analysis_file('T_TC_analysis/heatmap', heatmap_plot_analysis)
+    original_data = fetch_data_from_sql(title_and_time_control_query)
+    if (plot_names.__contains__('heatmap')):
+        formatted_heatmap_data = format_data_for_plot(original_data)
+        filtered_heatmap_data = filter_data_for_plot(formatted_heatmap_data)
+        heatmap_plot_analysis = plot_title_and_time_control_heatmap(filtered_heatmap_data)
+        store_analysis_file('T_TC_analysis/heatmap', heatmap_plot_analysis)
 
 @assign_plot_to_analysis('T_TC_analysis','heatmap')
 def plot_title_and_time_control_heatmap(formatted_and_filtered : pd.DataFrame):
@@ -54,6 +54,8 @@ def plot_title_and_time_control_heatmap(formatted_and_filtered : pd.DataFrame):
     xlabel='Time Control',
     ylabel='Player Title'
     ).get_figure())
+
+## Data handler functions
 
 def format_data_for_plot(original_data : pd.DataFrame):
     """

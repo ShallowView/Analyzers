@@ -1,3 +1,7 @@
+import json
+import plotly.tools as tools
+from matplotlib.axes import  Axes
+import os
 """
 DESCRIPTION
 
@@ -32,3 +36,8 @@ def assign_plot_to_analysis(analysis_name: str, plot_function_name : str):
         return func
     return decorator
             
+def plot_to_json(plot_directory_path : str, plot_name):
+    def decorator(func):
+        os.makedirs(plot_directory_path + plot_name ,exist_ok=True)
+        with open(plot_name, "w") as plot_file:
+            plot_file.write(json.dumps(tools.mpl_to_plotly(func)))

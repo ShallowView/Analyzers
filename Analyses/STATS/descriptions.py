@@ -19,8 +19,7 @@ games_query ="""
         SELECT 
             id, white, black, result, white_elo, black_elo,
             date_time, time_control, opening
-        FROM games
-        LIMIT 100;
+        FROM games;
     """
 
 @register_analysis('STATS_analysis')
@@ -58,13 +57,12 @@ def clean_games_data(games) :
 
 @assign_plot_to_analysis('STATS_analysis', 'histogram')
 def plot_stats_historgram(games):
-    figgy : Figure = plt.figure(figsize=(12, 5))
+    plt.figure(figsize=(12, 5))
     sns.histplot(games['white_elo'], color='blue', label='White Elo', kde=True)
     sns.histplot(games['black_elo'], color='red', label='Black Elo', kde=True)
     plt.title("Distribution des Elo des joueurs")
     plt.legend()
     plt.grid(True)
-    figgy.savefig("rainbow.png")
     
 @assign_plot_to_analysis('STATS_analysis', 'boxplot')
 def plot_stats_boxplot(games):
@@ -79,5 +77,6 @@ def plot_stats_heatmap(games):
     sns.heatmap(games[['white_elo', 'black_elo', 'EloDiff', 'BaseTime', 'Increment', 'Gagnant']].corr(), 
                 annot=True, cmap='coolwarm', fmt=".2f")
     plt.title("Heatmap des corrélations")
-    
+
+# Data handler fucntions : There are no data handler functions
 

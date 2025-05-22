@@ -50,13 +50,11 @@ WHERE white.title IS NOT NULL OR black.title IS NOT NULL
 ### START OF ANALYSIS ##########################################################################################################
 @register_analysis('MCA_analysis')
 def MCA_analysis(list_of_plots : list[str]) -> None:
-    print("MCA_analysis called")
-    # general_data = fetch_data_from_sql(opening_time_control_title_query)
+    general_data = fetch_data_from_sql(opening_time_control_title_query)
     if (list_of_plots.__contains__('scatter_biplot')):
-        print("MCA_analysis/scatter_biplot called")
-        # fitted_data : prince.MCA = process_and_fit_data(general_data)
-        # formatted_data = format_data_for_scatter_biplot(general_data, fitted_data)
-        # plot_MCA_scatter_biplot(formatted_data)
+        fitted_data : prince.MCA = process_and_fit_data(general_data)
+        formatted_data = format_data_for_scatter_biplot(general_data, fitted_data)
+        plot_MCA_scatter_biplot(formatted_data)
 
 @assign_plot_to_analysis('MCA_analysis', 'scatter_biplot')
 def plot_MCA_scatter_biplot(coordinates : dict[str,pd.DataFrame]) -> list:
@@ -75,6 +73,8 @@ def plot_MCA_scatter_biplot(coordinates : dict[str,pd.DataFrame]) -> list:
         tools.mpl_to_plotly(row_axe),
         tools.mpl_to_plotly(column_axe)
     ]
+
+# Data handler fucntions
 
 def process_and_fit_data(base_data : pd.DataFrame) -> prince.MCA:
     base_data.columns = ['time_control', 'opening', 'title']

@@ -135,14 +135,13 @@ def filter_data_by_threshold(df: pd.DataFrame, row_threshold=None, col_threshold
 """
 To store the json file content somewhere still to be determined
 """
-DEFAULT_DIR = '/home/ryanator/DevDurable/Project/Analyzers/Analyses/json/'
 def store_analysis_file(analysis_location : str, analysis_file_content : Figure | None):
     if analysis_file_content is None:
         print("Analysis content is empty")
         return
-    # location = DEFAULT_DIR + analysis_location + '.json'
-    # with open(location, "w") as file:
-    #     file.write(str(analysis_file_content))
+    location = analysis_location + '.json'
+    with open(location, "w") as file:
+        file.write(str(analysis_file_content))
         
 """
 Admin configuration functions

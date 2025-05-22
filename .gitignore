@@ -16,6 +16,7 @@ pip-selfcheck.json
 *.tsv
 *.pgn
 
+.cool/
 .vscode
 .idea
 __pycache__/

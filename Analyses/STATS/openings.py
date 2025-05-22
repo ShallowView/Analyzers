@@ -30,16 +30,13 @@ openings_query = """
         LIMIT 15
     """
 
-
-
 @register_analysis('STATS_analysis_openings')
 def STATS_analysis_openings(plot_list : list[str]):
     print("STATS_analysis_openings called")
     openings_data : pd.DataFrame = fetch_data_from_sql(openings_query)
     if (plot_list.__contains__('barplot')):
         print("STATS_analysis_openings/barplot called")
-        plot_stats_openings_barplots(openings=openings_data)
-
+        # plot_stats_openings_barplots(openings=openings_data) this doesn't work TODO: fix this function -> it is a formatting issue
 
 """
 Top 15 most used openings, and what the result of those games yielded
