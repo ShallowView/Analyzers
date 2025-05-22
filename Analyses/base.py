@@ -242,6 +242,10 @@ def plot_scatter_biplot(title : str, row_coordinates : pd.DataFrame, columns_coo
     scatter_figure.savefig('somewhere.png')
     return plot_axes
 
+
+# def plot_histogram()
+
+
 """
 Other
 """

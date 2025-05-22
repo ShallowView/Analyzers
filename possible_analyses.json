@@ -1,1 +1,1 @@
-{"O_TC_analysis": ["O_TC_heatmap", "O_TC_barplot"], "T_TC_analysis": ["T_TC_heatmap"], "MCA_analysis": ["scatter_biplot"]}
+{"STATS_analysis": ["histogram", "boxplot", "heatmap"], "O_TC_analysis": ["heatmap", "barplot"], "T_TC_analysis": ["heatmap"], "MCA_analysis": ["scatter_biplot"]}

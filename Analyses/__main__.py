@@ -1,7 +1,10 @@
 from email import contentmanager
+
+from .STATS.descriptions import * 
 from .O_TC.opening_and_time_control import * 
 from .T_TC.title_and_time_control import *
 from .MCA.correspondance_opening_time_control_title import *
+
 from .registry import *
 from .base import * 
 import json
@@ -46,6 +49,10 @@ if __name__ == "__main__":
             case {"MCA_analysis" : plot_list, **rest}:
                 MCA_analysis(plot_list)
                 content_copy.pop("MCA_analysis")
+                processed = True
+            case {"STATS_analysis" : plot_list, **rest}:
+                STATS_analysis(plot_list)
+                content_copy.pop("STATS_analysis")
                 processed = True
             case _:
                 raise Exception(f"Analysis not possible for: {remaining_keys[0]}")
