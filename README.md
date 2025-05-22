@@ -7,11 +7,26 @@ _Soon..._
 ### Technician installation guide
 #### Inserting new PGN files to a postgreSQL database
 
-Create a config.json file containing the connection parameters to the postgreSQL server and the paths to the PGNFiles you wish to add. An example is present in DataCollection/
+Create a config.json file containing the connection parameters to the postgreSQL server and the paths to the PGNFiles you wish to add. An [example](DataCollection/config.json) is present in DataCollection/
 
 Launch the module:
 ``` bash
 python -m DataCollection <config_file>
+```
+
+#### Generating network graphs with Louvain partitioning
+
+Create a input.json file containing the connection parameters to the postgreSQL server and the JSON output path. An [example](Louvain/input.example.json) is present in Louvain/
+
+Launch the module:
+``` bash
+python -m Louvain -c <color> -l <layout> <config_file>
+```
+An example of the output of this command is present [here](Louvain/output.example.json)
+
+For additional options, you can use the help command:
+``` bash
+python -m Louvain -h
 ```
 
 ### Developer preparation guide
