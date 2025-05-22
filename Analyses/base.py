@@ -6,6 +6,7 @@ import seaborn as sns
 from sqlalchemy import create_engine
 import os
 from dotenv import load_dotenv
+from . import constants
 
 """
 Analyses -> format = <directory_acronym>/<elements_in_acronym> : <explanation>
@@ -24,7 +25,6 @@ DEFAULT_STORAGE_DIR -> name of directory in every package that contains plots/fi
 load_dotenv()
 DB_STR_ENGINE : str = "postgresql://Ryan%20Heuvel@s0.net.pimous.dev:31003/shallowview?sslmode=require&sslcert=%2Fhome%2Fryanator%2F.ssl%2Fryan-heuvel.crt&sslkey=%2Fhome%2Fryanator%2F.ssl%2Fryan-heuvel.key&sslrootcert=%2Fhome%2Fryanator%2F.ssl%2Fpimousdev-db.chain.crt"
 TEST_ROW_COUNT : int = 10000 # for testing purposes, don't need to query entire database
-DEFAULT_STORAGE_DIR="findings" # for admin zone
 
 """
 Utiliy functions for ALL analyses (descriptions are in the function definitions)
@@ -132,15 +132,34 @@ def filter_data_by_threshold(df: pd.DataFrame, row_threshold=None, col_threshold
 
     return filtered_df
 
+def clean_analysis_file_content(analysis_file_content : str | None) -> str | None:
+    """
+    Cleans the content of an analysis file by removing unnecessary elements.
+
+    Args:
+        analysis_file_content (Figure | None): The content of the analysis file to clean.
+
+    Returns:
+        Figure | None: The cleaned content of the analysis file.
+    """
+    if analysis_file_content is None:
+        return None
+    analysis_file_content = str(analysis_file_content)[7:-1] # weird string formatting
+    return analysis_file_content
+
 """
 To store the json file content somewhere still to be determined
 """
-def store_analysis_file(analysis_location : str, analysis_file_content : Figure | None):
+def store_analysis_file(analysis_location : str, analysis_file_content : str | None):
     if analysis_file_content is None:
         print("Analysis content is empty")
         return
-    location = analysis_location + '.json'
-    with open(location, "w") as file:
+    full_path = constants.get_storage_dir() + "/" + analysis_location + ".json"
+    directory_path = os.path.dirname(full_path)
+    os.makedirs(directory_path, exist_ok=True)
+    content : str  = str(analysis_file_content)
+    analysis_file_content = clean_analysis_file_content(content)
+    with open(full_path, "w") as file:  
         file.write(str(analysis_file_content))
         
 """
@@ -160,6 +179,19 @@ def set_storage_directory(storage_directory_name: str, magic_file_attribute) -> 
     current_dir_name = os.path.dirname(magic_file_attribute)
     os.makedirs(current_dir_name + "/" +  storage_directory_name, exist_ok=True)
     return current_dir_name + "/" +  storage_directory_name + "/"
+
+
+STORAGE_DIR_LOCATION = ""
+def initialize_storage(location: str):
+    STORAGE_DIR_LOCATION = location
+
+
+def ensure_storage_dir_exists(storage_dir_location):
+    """
+    Ensures that the storage directory exists. If it does not exist, it is created.
+    """
+    if not os.path.exists(storage_dir_location):
+        os.makedirs(storage_dir_location, exist_ok=True)
 
 """
 This is where wrapper functions for plots are to be placed, they will produce JSON

@@ -1,25 +1,24 @@
-from email import contentmanager
-
-from Analyses.STATS.clusters import STATS_analysis_clusters
-from Analyses.STATS.openings import STATS_analysis_openings
-
+from .STATS.clusters import *
+from .STATS.openings import *
 from .STATS.descriptions import * 
 from .O_TC.opening_and_time_control import * 
 from .T_TC.title_and_time_control import *
 from .MCA.correspondance_opening_time_control_title import *
 
 from .registry import *
-from .base import * 
+from .base import *
 import json
 import argparse
 import warnings
 import sys
+from . import constants
 
 """
 This warning is because of a conversion from a seaborn heatmap to a plotly object
 I am not sure if this will cause issues when reading in JSON, I am ignorign it for now
 """
 warnings.filterwarnings('ignore', message='Dang! That path collection is out of this world')
+
 
 if __name__ == "__main__":
     
@@ -30,16 +29,21 @@ if __name__ == "__main__":
         with open("possible_analyses.json") as default_all:
             content = json.load(default_all)
     
-    if (len(sys.argv) != 1):
+    if (len(sys.argv) == 3):
         arguments = argparse.ArgumentParser(description=f"""
         JSON file containing list of analyses to run as well as the plotts needed from those analyses
         """)
         arguments.add_argument("path_to_json", type=str)
+        arguments.add_argument("path_to_json_storage_dir", type=str)
         args = arguments.parse_args()
         recieved_json_path = args.path_to_json
+        STORAGE_DIR_LOCATION = args.path_to_json_storage_dir
+        constants.set_storage_dir(STORAGE_DIR_LOCATION)
+        if not os.path.exists(STORAGE_DIR_LOCATION): # create the default storage dir
+            os.makedirs(STORAGE_DIR_LOCATION, exist_ok=True)
         
         with open(recieved_json_path) as file:
-            content = json.load(file)
+            content : dict = json.load(file)
     
     content_copy = content.copy()
     processed = False
