@@ -1,0 +1,165 @@
+{
+  "partitions": [
+    {
+      "id": 13,
+      "main_opening": "French Defense",
+      "player_count": 11,
+      "players": [
+        "eduardo_gonzalez",
+        "Zokimo",
+        "diemerio",
+        "inex",
+        "Goodluck3",
+        "Euroshima",
+        "Maartenols",
+        "iddo",
+        "NickCF",
+        "SirHarmony",
+        "Sylma"
+      ],
+      "variation_count": 3,
+      "variations": [
+        "French Defense: Exchange Variation",
+        "Blackmar-Diemer Gambit",
+        "Sicilian Defense: Wing Gambit"
+      ],
+      "average_max_elo": 2000.4,
+      "total_play_count": 1998
+    },
+    {
+      "id": 14,
+      "main_opening": "Bishop's Opening",
+      "player_count": 24,
+      "players": [
+        "Jorkkix",
+        "chessname1234",
+        "Obanta",
+        "MoroArg",
+        "marcelbloing",
+        "Simon_Gandzakeci",
+        "Bill-Hicks",
+        "troterocom",
+        "betmens",
+        "galan",
+        "TomoKnez",
+        "Septem",
+        "SiavashHuman",
+        "kaisaw",
+        "Potkonjak",
+        "Padrino52",
+        "maxxxl",
+        "husseinhhh",
+        "rachipa",
+        "bidiot-2017",
+        "ruebezahl",
+        "trystal",
+        "aki_Milano",
+        "segeiiii"
+      ],
+      "variation_count": 5,
+      "variations": [
+        "Sicilian Defense: Bowdler Attack",
+        "Bishop's Opening",
+        "Center Game: von der Lasa Gambit",
+        "Bishop's Opening: Berlin Defense",
+        "Center Game"
+      ],
+      "average_max_elo": 1890.5,
+      "total_play_count": 4298
+    },
+    {
+      "id": 15,
+      "main_opening": "Grob Opening",
+      "player_count": 14,
+      "players": [
+        "AnimalTk",
+        "Alexxadrez32",
+        "teo_laur",
+        "ostapknysh",
+        "crex",
+        "frenibas",
+        "Mo-Green",
+        "Gugo_de_Paien",
+        "ricdac",
+        "capestile",
+        "fastest61",
+        "Perfectos",
+        "HenryGrob",
+        "oktay19656"
+      ],
+      "variation_count": 1,
+      "variations": [
+        "Grob Opening"
+      ],
+      "average_max_elo": 1914.0,
+      "total_play_count": 1970
+    }
+  ],
+  "nodes": [
+    {
+      "id": "jfn",
+      "type": "player",
+      "position": {
+        "x": -0.44935280084609985,
+        "y": -0.06399358808994293
+      },
+      "community": 0,
+      "elo": 2050,
+      "play_count": 219
+    },
+    {
+      "id": "Patex",
+      "type": "player",
+      "position": {
+        "x": 0.5175236463546753,
+        "y": -0.33853471279144287
+      },
+      "community": 1,
+      "elo": 1303,
+      "play_count": 316
+    },
+    {
+      "id": "Darkantaris",
+      "type": "player",
+      "position": {
+        "x": 0.14299358427524567,
+        "y": 0.7509928941726685
+      },
+      "community": 2,
+      "elo": 2225,
+      "play_count": 323
+    }
+  ],
+  "edges": [
+    {
+      "source": "jfn",
+      "target": "Sicilian Defense",
+      "weight": 0.13
+    },
+    {
+      "source": "jfn",
+      "target": "French Defense: Queen's Knight",
+      "weight": 0.12
+    },
+    {
+      "source": "Patex",
+      "target": "Van't Kruijs Opening",
+      "weight": 0.94
+    },
+    {
+      "source": "Darkantaris",
+      "target": "Bird Opening",
+      "weight": 0.48
+    },
+    {
+      "source": "Darkantaris",
+      "target": "Bird Opening: Dutch Variation",
+      "weight": 0.22
+    },
+    {
+      "source": "Cedg2015",
+      "target": "Hungarian Opening",
+      "weight": 0.56
+    }
+  ]
+}

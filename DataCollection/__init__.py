@@ -1,8 +1,8 @@
-__author__ = "agueguen_lr"
+__author__ = "agueguen-lr"
 __all__ = ["setMaxCores", "addOpeningsToDatabase", "addNewPGNtoDatabase",
 					 "insertDataToPostgres", "createOpeningsDataFrame",
 					 "createGamesDataFrame", "createPlayersDataFrame",
-					 "updatePlayersElo", "PGNtoDataFrame"]
+					 "updatePlayersElo", "PGNtoDataFrame", "validate_and_extract_params"]
 
 import multiprocessing
 from typing import Iterator
@@ -48,7 +48,7 @@ def setMaxCores(cores: int = MAX_CORES) -> None:
 		logger.warning("Invalid core count. Using default value.")
 
 
-def PGNtoDataFrame(files: list[str], chunk_size : int = 250000) -> Iterator[
+def PGNtoDataFrame(files: list[str], chunk_size : int = 500000) -> Iterator[
 	pd.DataFrame]:
 	"""
 	Process PGN files and yield DataFrames of games.
@@ -78,7 +78,7 @@ def PGNtoDataFrame(files: list[str], chunk_size : int = 250000) -> Iterator[
 	except FileNotFoundError as e:
 		logger.error(f"File not found")
 	except Exception as e:
-		logger.error(f"Unexpected error while processing PGN file")
+		logger.error(f"Unexpected error while processing PGN file: {e}")
 	return None
 
 def __process_players_chunk(
@@ -445,3 +445,30 @@ def addOpeningsToDatabase(
 
 	except Exception as e:
 		logger.error(f"Error in addOpeningsToDatabase: {e}")
+
+
+def validate_and_extract_params(
+		params: dict, required_keys: list, optional_keys: list = None
+		) -> dict:
+	"""
+	Validate and extract required and optional parameters from a dictionary.
+
+	:param params: Dictionary containing the parameters to validate and extract.
+	:param required_keys: List of keys that must be present in the params dictionary.
+	:param optional_keys: List of keys that are optional in the params dictionary.
+	:return: Dictionary containing the extracted parameters.
+	"""
+
+	missing_keys = [key for key in required_keys if params.get(key) is None]
+	if missing_keys:
+		raise ValueError(
+			f"Missing required parameters: {", ".join(missing_keys)}"
+		)
+
+	extracted_params = {key: params[key] for key in required_keys}
+	if optional_keys:
+		for key in optional_keys:
+			if params.get(key):
+				extracted_params[key] = params[key]
+
+	return extracted_params
