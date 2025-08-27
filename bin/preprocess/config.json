@@ -1,0 +1,9 @@
+{
+	"host": "s0.net.pimous.dev",
+	"port": 5432,
+	"dbname": "shallowview",
+	"user": "shallowview",
+	"password": "dummy",
+
+	"output": "out/louvain/initial.json"
+}
